@@ -2,7 +2,7 @@
     "name": "Task Manager",
     "short_name": "Tasks",
     "description": "A task manager with voice input support",
-    "start_url": "/",
+    "start_url": "/tasktest/",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#4a90d9",
