@@ -31,8 +31,9 @@ const App = (function() {
 
     // Timer state
     let timerInterval = null;
-    let timerSeconds = 0;
+    let timerStartTime = null;
     let timerLimit = 0;
+    let timerNotificationSent = false;
 
     // Add modal elements
     const addToggle = document.getElementById('add-toggle');
@@ -590,7 +591,8 @@ const App = (function() {
         }
 
         // Reset timer display
-        timerSeconds = 0;
+        timerStartTime = null;
+        timerNotificationSent = false;
         timerDisplay.textContent = '00:00';
         taskTimer.classList.add('hidden');
         taskTimer.classList.remove('running', 'warning', 'overtime');
@@ -664,31 +666,23 @@ const App = (function() {
         // Request notification permission
         requestNotificationPermission();
 
+        // Store start time
+        timerStartTime = Date.now();
+        timerNotificationSent = false;
+
         // Hide start button, show timer
         startBtn.classList.add('hidden');
         taskTimer.classList.remove('hidden');
         taskTimer.classList.add('running');
 
         timerInterval = setInterval(function() {
-            timerSeconds++;
             updateTimerDisplay();
-
-            // Check for warning (80% of time limit)
-            if (timerLimit > 0) {
-                const warningThreshold = timerLimit * 0.8;
-                if (timerSeconds >= timerLimit) {
-                    taskTimer.classList.remove('warning');
-                    taskTimer.classList.add('overtime');
-
-                    // Send notification only once when time is up
-                    if (timerSeconds === timerLimit) {
-                        sendTimerNotification();
-                    }
-                } else if (timerSeconds >= warningThreshold) {
-                    taskTimer.classList.add('warning');
-                }
-            }
         }, 1000);
+    }
+
+    function getElapsedSeconds() {
+        if (!timerStartTime) return 0;
+        return Math.floor((Date.now() - timerStartTime) / 1000);
     }
 
     function stopTimer() {
@@ -700,35 +694,23 @@ const App = (function() {
 
     function resetTimer() {
         stopTimer();
-        timerSeconds = 0;
+        timerStartTime = Date.now();
+        timerNotificationSent = false;
         updateTimerDisplay();
         taskTimer.classList.remove('warning', 'overtime');
         taskTimer.classList.add('running');
 
         // Restart the timer
         timerInterval = setInterval(function() {
-            timerSeconds++;
             updateTimerDisplay();
-
-            if (timerLimit > 0) {
-                const warningThreshold = timerLimit * 0.8;
-                if (timerSeconds >= timerLimit) {
-                    taskTimer.classList.remove('warning');
-                    taskTimer.classList.add('overtime');
-                    if (timerSeconds === timerLimit) {
-                        sendTimerNotification();
-                    }
-                } else if (timerSeconds >= warningThreshold) {
-                    taskTimer.classList.add('warning');
-                }
-            }
         }, 1000);
     }
 
     function updateTimerDisplay() {
-        const hours = Math.floor(timerSeconds / 3600);
-        const mins = Math.floor((timerSeconds % 3600) / 60);
-        const secs = timerSeconds % 60;
+        const elapsed = getElapsedSeconds();
+        const hours = Math.floor(elapsed / 3600);
+        const mins = Math.floor((elapsed % 3600) / 60);
+        const secs = elapsed % 60;
 
         if (hours > 0) {
             timerDisplay.textContent = String(hours).padStart(2, '0') + ':' +
@@ -737,6 +719,23 @@ const App = (function() {
         } else {
             timerDisplay.textContent = String(mins).padStart(2, '0') + ':' +
                                         String(secs).padStart(2, '0');
+        }
+
+        // Check for warning (80% of time limit) and overtime
+        if (timerLimit > 0) {
+            const warningThreshold = timerLimit * 0.8;
+            if (elapsed >= timerLimit) {
+                taskTimer.classList.remove('warning');
+                taskTimer.classList.add('overtime');
+
+                // Send notification only once when time is up
+                if (!timerNotificationSent) {
+                    timerNotificationSent = true;
+                    sendTimerNotification();
+                }
+            } else if (elapsed >= warningThreshold) {
+                taskTimer.classList.add('warning');
+            }
         }
     }
 

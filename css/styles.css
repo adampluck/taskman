@@ -831,25 +831,25 @@ body {
 
     .category-wheel,
     .add-category-wheel {
-        gap: 2px;
-        padding: 8px 4px;
-        height: 70px;
+        gap: 4px;
+        padding: 12px 8px;
+        height: 90px;
         touch-action: pan-y;
     }
 
     .wheel-item {
-        padding: 6px 8px;
-        height: 50px;
-        min-width: 40px;
+        padding: 8px 12px;
+        height: 66px;
+        min-width: 52px;
     }
 
     .wheel-item svg {
-        width: 20px;
-        height: 20px;
+        width: 28px;
+        height: 28px;
     }
 
     .wheel-label {
-        font-size: 0.5rem;
+        font-size: 0.5625rem;
     }
 
     .time-options-wrap {

@@ -1,11 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="24" fill="#4a90d9"/>
-  <rect x="40" y="50" width="112" height="92" rx="8" fill="white"/>
-  <rect x="56" y="70" width="16" height="16" rx="3" fill="#4a90d9"/>
-  <rect x="84" y="74" width="52" height="8" rx="4" fill="#e0e0e0"/>
-  <rect x="56" y="98" width="16" height="16" rx="3" fill="#4caf50"/>
-  <path d="M60 106 L64 110 L70 102" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="84" y="102" width="40" height="8" rx="4" fill="#e0e0e0"/>
-  <rect x="56" y="126" width="16" height="16" rx="3" fill="#4a90d9"/>
-  <rect x="84" y="130" width="56" height="8" rx="4" fill="#e0e0e0"/>
+  <rect width="192" height="192" rx="40" fill="#000"/>
+  <line x1="56" y1="72" x2="136" y2="72" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+  <line x1="56" y1="96" x2="136" y2="96" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
+  <line x1="56" y1="120" x2="136" y2="120" stroke="#fff" stroke-width="8" stroke-linecap="round"/>
 </svg>

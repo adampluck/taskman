@@ -1,7 +1,7 @@
 {
-    "name": "Just Do It",
-    "short_name": "Do It",
-    "description": "A task manager with voice input support",
+    "name": "Taskman",
+    "short_name": "Taskman",
+    "description": "Stop overthinking. Pick a task. Do it.",
     "start_url": "/taskman/",
     "display": "standalone",
     "background_color": "#000000",
