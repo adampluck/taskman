@@ -122,7 +122,11 @@ const SyncEngine = (function() {
         const client = getSupabase();
         if (!client) return;
 
+        const user = Auth.getUser();
+        if (!user) return;
+
         const payload = {
+            user_id: user.id,
             local_id: task.id,
             title: task.title,
             category: task.category,

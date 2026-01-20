@@ -294,12 +294,15 @@ const App = (function() {
     function openAuthModal() {
         authModal.classList.remove('hidden');
         playSound('open');
+        window._authFocusArea = 'input';
 
         if (Auth.isAuthenticated()) {
             showAuthView('account');
             updateAuthUI();
+            window._authFocusArea = 'button';
         } else {
             showAuthView('signin');
+            document.getElementById('auth-email').focus();
         }
     }
 
@@ -989,6 +992,14 @@ const App = (function() {
         document.getElementById('migrate-yes').addEventListener('click', handleMigrate);
         document.getElementById('migrate-no').addEventListener('click', handleSkipMigrate);
 
+        // Signup prompt events
+        document.getElementById('close-signup-prompt').addEventListener('click', dismissSignupPrompt);
+        document.getElementById('signup-prompt-later').addEventListener('click', dismissSignupPrompt);
+        document.getElementById('signup-prompt-yes').addEventListener('click', function() {
+            closeSignupPrompt();
+            openAuthModal();
+        });
+
         // Keyboard handler for modals
         document.addEventListener('keydown', function(e) {
             // Escape closes modals
@@ -996,6 +1007,7 @@ const App = (function() {
                 if (!addModal.classList.contains('hidden')) closeAddModal();
                 if (!manageModal.classList.contains('hidden')) closeManageModal();
                 if (!authModal.classList.contains('hidden')) closeAuthModal();
+                if (!document.getElementById('signup-prompt').classList.contains('hidden')) dismissSignupPrompt();
                 return;
             }
 
@@ -1136,7 +1148,145 @@ const App = (function() {
                 }
                 return;
             }
+
+            // Auth modal keyboard navigation
+            if (!authModal.classList.contains('hidden')) {
+                const authEmail = document.getElementById('auth-email');
+                const closeAuth = document.getElementById('close-auth');
+                const signinView = document.getElementById('auth-signin');
+                const checkEmailView = document.getElementById('auth-check-email');
+                const accountView = document.getElementById('auth-account');
+                const migrateView = document.getElementById('auth-migrate');
+
+                // Don't intercept when typing in email input (except arrows)
+                if (document.activeElement === authEmail && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') {
+                    return;
+                }
+
+                if (!window._authFocusArea) window._authFocusArea = 'input';
+
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (!signinView.classList.contains('hidden')) {
+                        if (window._authFocusArea === 'input') {
+                            window._authFocusArea = 'close';
+                            authEmail.blur();
+                        } else if (window._authFocusArea === 'button') {
+                            window._authFocusArea = 'input';
+                            authEmail.focus();
+                        }
+                    } else if (!checkEmailView.classList.contains('hidden')) {
+                        if (window._authFocusArea === 'button') {
+                            window._authFocusArea = 'close';
+                        }
+                    } else if (!accountView.classList.contains('hidden')) {
+                        if (window._authFocusArea === 'button') {
+                            window._authFocusArea = 'close';
+                        }
+                    } else if (!migrateView.classList.contains('hidden')) {
+                        if (window._authFocusArea === 'button') {
+                            window._authFocusArea = 'close';
+                        } else if (window._authFocusArea === 'button2') {
+                            window._authFocusArea = 'button';
+                        }
+                    }
+                    updateAuthFocusIndicators();
+                    playSound('tick');
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (!signinView.classList.contains('hidden')) {
+                        if (window._authFocusArea === 'close') {
+                            window._authFocusArea = 'input';
+                            authEmail.focus();
+                        } else if (window._authFocusArea === 'input') {
+                            window._authFocusArea = 'button';
+                            authEmail.blur();
+                        }
+                    } else if (!checkEmailView.classList.contains('hidden')) {
+                        if (window._authFocusArea === 'close') {
+                            window._authFocusArea = 'button';
+                        }
+                    } else if (!accountView.classList.contains('hidden')) {
+                        if (window._authFocusArea === 'close') {
+                            window._authFocusArea = 'button';
+                        }
+                    } else if (!migrateView.classList.contains('hidden')) {
+                        if (window._authFocusArea === 'close') {
+                            window._authFocusArea = 'button';
+                        } else if (window._authFocusArea === 'button') {
+                            window._authFocusArea = 'button2';
+                        }
+                    }
+                    updateAuthFocusIndicators();
+                    playSound('tick');
+                } else if (e.key === 'Enter' || e.key === ' ') {
+                    if (window._authFocusArea === 'close') {
+                        e.preventDefault();
+                        closeAuth.click();
+                    } else if (window._authFocusArea === 'button') {
+                        if (!signinView.classList.contains('hidden')) {
+                            // Submit form
+                            document.getElementById('magic-link-form').requestSubmit();
+                        } else if (!checkEmailView.classList.contains('hidden')) {
+                            e.preventDefault();
+                            document.getElementById('auth-back').click();
+                        } else if (!accountView.classList.contains('hidden')) {
+                            e.preventDefault();
+                            document.getElementById('sign-out').click();
+                        } else if (!migrateView.classList.contains('hidden')) {
+                            e.preventDefault();
+                            document.getElementById('migrate-yes').click();
+                        }
+                    } else if (window._authFocusArea === 'button2') {
+                        e.preventDefault();
+                        document.getElementById('migrate-no').click();
+                    }
+                }
+                return;
+            }
         });
+
+        function updateAuthFocusIndicators() {
+            const closeAuth = document.getElementById('close-auth');
+            const authEmail = document.getElementById('auth-email');
+            const submitBtn = document.querySelector('#magic-link-form .btn-add');
+            const backBtn = document.getElementById('auth-back');
+            const signOutBtn = document.getElementById('sign-out');
+            const migrateYes = document.getElementById('migrate-yes');
+            const migrateNo = document.getElementById('migrate-no');
+
+            // Clear all
+            closeAuth.classList.remove('focused');
+            if (authEmail) authEmail.classList.remove('focused');
+            if (submitBtn) submitBtn.classList.remove('focused');
+            if (backBtn) backBtn.classList.remove('focused');
+            if (signOutBtn) signOutBtn.classList.remove('focused');
+            if (migrateYes) migrateYes.classList.remove('focused');
+            if (migrateNo) migrateNo.classList.remove('focused');
+
+            if (window._authFocusArea === 'close') {
+                closeAuth.classList.add('focused');
+            } else if (window._authFocusArea === 'input') {
+                if (authEmail) authEmail.classList.add('focused');
+            } else if (window._authFocusArea === 'button') {
+                const signinView = document.getElementById('auth-signin');
+                const checkEmailView = document.getElementById('auth-check-email');
+                const accountView = document.getElementById('auth-account');
+                const migrateView = document.getElementById('auth-migrate');
+
+                if (!signinView.classList.contains('hidden') && submitBtn) {
+                    submitBtn.classList.add('focused');
+                } else if (!checkEmailView.classList.contains('hidden') && backBtn) {
+                    backBtn.classList.add('focused');
+                } else if (!accountView.classList.contains('hidden') && signOutBtn) {
+                    signOutBtn.classList.add('focused');
+                } else if (!migrateView.classList.contains('hidden') && migrateYes) {
+                    migrateYes.classList.add('focused');
+                }
+            } else if (window._authFocusArea === 'button2') {
+                if (migrateNo) migrateNo.classList.add('focused');
+            }
+        }
 
         // Reset manage modal focus when opening
         const originalOpenManageModal = openManageModal;
@@ -1239,6 +1389,44 @@ const App = (function() {
         celebrate();
         showView(promptView);
         updatePickButton();
+        checkSignupPrompt();
+    }
+
+    function checkSignupPrompt() {
+        // Don't show if already authenticated
+        if (typeof Auth !== 'undefined' && Auth.isAuthenticated()) return;
+
+        // Don't show if already dismissed
+        if (localStorage.getItem('taskman-signup-dismissed')) return;
+
+        // Count completed tasks
+        const tasks = TaskStorage.getTasks();
+        const completedCount = tasks.filter(function(t) { return t.completed; }).length;
+
+        // Show prompt after 3 completions
+        if (completedCount >= 3) {
+            setTimeout(function() {
+                showSignupPrompt(completedCount);
+            }, 1500); // Delay to let celebration finish
+        }
+    }
+
+    function showSignupPrompt(count) {
+        const prompt = document.getElementById('signup-prompt');
+        const countEl = document.getElementById('completed-count');
+        if (countEl) countEl.textContent = count;
+        prompt.classList.remove('hidden');
+        playSound('open');
+    }
+
+    function closeSignupPrompt() {
+        document.getElementById('signup-prompt').classList.add('hidden');
+        playSound('close');
+    }
+
+    function dismissSignupPrompt() {
+        localStorage.setItem('taskman-signup-dismissed', 'true');
+        closeSignupPrompt();
     }
 
     function celebrate() {

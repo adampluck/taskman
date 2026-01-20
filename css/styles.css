@@ -55,8 +55,8 @@ body {
 /* Top Controls */
 .top-controls {
     position: fixed;
-    top: 16px;
-    right: 16px;
+    top: 32px;
+    right: 32px;
     display: flex;
     gap: 8px;
     z-index: 50;
@@ -1652,8 +1652,8 @@ body.rainbow-mode .modal-close.focused {
     }
 
     .top-controls {
-        top: 12px;
-        right: 12px;
+        top: 24px;
+        right: 24px;
     }
 
     .task-category-icon svg {
@@ -1680,6 +1680,9 @@ body.rainbow-mode .modal-close.focused {
     .category-wheel[data-focused="true"],
     .add-category-wheel[data-focused="true"],
     .time-options-wrap[data-focused="true"],
+    body.light-mode .category-wheel[data-focused="true"],
+    body.light-mode .add-category-wheel[data-focused="true"],
+    body.light-mode .time-options-wrap[data-focused="true"],
     body.rainbow-mode .category-wheel[data-focused="true"],
     body.rainbow-mode .add-category-wheel[data-focused="true"],
     body.rainbow-mode .time-options-wrap[data-focused="true"] {
@@ -1873,6 +1876,11 @@ body.light-mode .btn-passkey:hover {
     margin-bottom: 16px;
 }
 
+.auth-view p {
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
 .auth-email {
     color: #888;
     font-size: 0.9375rem;
@@ -1925,6 +1933,90 @@ body.light-mode .btn-passkey:hover {
     color: #dc2626;
 }
 
+.btn-sign-out.focused {
+    outline: 2px solid #fff;
+    outline-offset: 4px;
+}
+
+/* Signup Prompt Modal */
+.signup-prompt-content {
+    text-align: center;
+    max-width: 340px;
+}
+
+.signup-prompt-content h2 {
+    font-size: 1.5rem;
+    margin-bottom: 12px;
+    color: #fff;
+}
+
+.signup-prompt-content p {
+    margin-bottom: 12px;
+    line-height: 1.5;
+    color: #aaa;
+}
+
+.signup-prompt-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+}
+
+.signup-prompt-warning {
+    color: #f59e0b !important;
+    font-size: 0.9rem;
+    margin-bottom: 20px !important;
+}
+
+.signup-prompt-benefits {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 24px 0;
+    text-align: left;
+}
+
+.benefit {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #ccc;
+    font-size: 0.9375rem;
+}
+
+.benefit-icon {
+    font-size: 1.25rem;
+    width: 28px;
+    text-align: center;
+}
+
+.signup-prompt-content .btn-add {
+    margin-bottom: 12px;
+}
+
+body.light-mode .signup-prompt-content h2 {
+    color: #111;
+}
+
+body.light-mode .signup-prompt-content p {
+    color: #666;
+}
+
+body.light-mode .benefit {
+    color: #444;
+}
+
+body.rainbow-mode .signup-prompt-content h2 {
+    color: var(--rainbow-fg);
+}
+
+body.rainbow-mode .signup-prompt-content p {
+    color: var(--rainbow-muted);
+}
+
+body.rainbow-mode .benefit {
+    color: var(--rainbow-fg);
+}
+
 body.light-mode .btn-sign-out {
     border-color: #ddd;
     color: #888;
@@ -1950,6 +2042,11 @@ body.light-mode .btn-sign-out:hover {
 .btn-secondary:hover {
     border-color: #555;
     color: #fff;
+}
+
+.btn-secondary.focused {
+    outline: 2px solid #fff;
+    outline-offset: 4px;
 }
 
 body.light-mode .btn-secondary {

@@ -217,6 +217,33 @@
 
     <div id="toast" class="toast">Task added</div>
 
+    <!-- Sign Up Prompt Modal -->
+    <div id="signup-prompt" class="modal hidden">
+        <div class="modal-content signup-prompt-content">
+            <button id="close-signup-prompt" class="modal-close">&times;</button>
+            <div class="signup-prompt-icon">&#9888;</div>
+            <h2>Don't lose your progress</h2>
+            <p>You've completed <strong id="completed-count">3</strong> tasks! But they're only saved on this device.</p>
+            <p class="signup-prompt-warning">If you clear your browser data or switch devices, your tasks will be gone forever.</p>
+            <div class="signup-prompt-benefits">
+                <div class="benefit">
+                    <span class="benefit-icon">&#128274;</span>
+                    <span>Secure, encrypted cloud backup</span>
+                </div>
+                <div class="benefit">
+                    <span class="benefit-icon">&#9729;</span>
+                    <span>Sync across all your devices</span>
+                </div>
+                <div class="benefit">
+                    <span class="benefit-icon">&#9889;</span>
+                    <span>Takes 10 seconds, no password needed</span>
+                </div>
+            </div>
+            <button id="signup-prompt-yes" class="btn-add">Save my progress</button>
+            <button id="signup-prompt-later" class="btn-secondary">Maybe later</button>
+        </div>
+    </div>
+
     <!-- Auth Modal -->
     <div id="auth-modal" class="modal hidden">
         <div class="modal-content auth-modal-content">
