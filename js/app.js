@@ -1351,6 +1351,17 @@ const App = (function() {
             closeManage.classList.remove('focused');
             originalOpenManageModal();
         };
+
+        // Global fallback: click any focused button/element on Enter
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                const focused = document.querySelector('.focused');
+                if (focused && (focused.tagName === 'BUTTON' || focused.classList.contains('btn-add') || focused.classList.contains('btn-pick'))) {
+                    e.preventDefault();
+                    focused.click();
+                }
+            }
+        });
     }
 
     function registerServiceWorker() {
