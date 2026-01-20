@@ -55,7 +55,7 @@ body {
 /* Top Controls */
 .top-controls {
     position: fixed;
-    top: 44px;
+    top: 32px;
     right: 32px;
     display: flex;
     gap: 8px;
@@ -64,7 +64,7 @@ body {
 
 .top-btn {
     width: 32px;
-    height: 32px;
+    height: 64px;
     background: transparent;
     border: none;
     color: #444;
@@ -1650,7 +1650,7 @@ body.rainbow-mode .modal-close.focused {
     }
 
     .top-controls {
-        top: 33px;
+        top: 24px;
         right: 24px;
     }
 
