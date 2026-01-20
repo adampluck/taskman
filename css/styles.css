@@ -1635,12 +1635,25 @@ body.rainbow-mode .modal-close.focused {
         height: 50px;
     }
 
+    .auth-float {
+        top: 24px;
+        left: 24px;
+        bottom: auto;
+        width: 44px;
+        height: 44px;
+    }
+
     .add-float {
         right: 24px;
     }
 
     .manage-float {
         left: 24px;
+    }
+
+    .top-controls {
+        top: 12px;
+        right: 12px;
     }
 
     .task-category-icon svg {
@@ -1699,12 +1712,6 @@ body.rainbow-mode .auth-float.focused {
     outline-color: var(--rainbow-accent);
 }
 
-@media (max-width: 480px) {
-    .auth-float {
-        top: 24px;
-        left: 24px;
-    }
-}
 
 #auth-toggle .icon-user-check {
     display: none;
