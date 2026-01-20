@@ -140,14 +140,6 @@ body.light-mode .top-btn.focused {
     outline-color: #888;
 }
 
-body.light-mode .auth-float {
-    color: #999;
-}
-
-body.light-mode .auth-float:hover {
-    color: #666;
-}
-
 body.light-mode .floating-btn.focused {
     outline-color: #111;
 }
@@ -468,14 +460,6 @@ body.rainbow-mode .top-btn:hover {
 
 body.rainbow-mode .top-btn.focused {
     outline-color: var(--rainbow-accent);
-}
-
-body.rainbow-mode .auth-float {
-    color: var(--rainbow-muted);
-}
-
-body.rainbow-mode .auth-float:hover {
-    color: var(--rainbow-fg);
 }
 
 body.rainbow-mode .floating-btn.focused {
@@ -1655,8 +1639,6 @@ body.rainbow-mode .modal-close.focused {
         top: 24px;
         left: 24px;
         bottom: auto;
-        width: 28px;
-        height: 28px;
     }
 
     .add-float {
@@ -1670,12 +1652,6 @@ body.rainbow-mode .modal-close.focused {
     .top-controls {
         top: 24px;
         right: 24px;
-    }
-
-    .top-btn {
-        width: 28px;
-        height: 28px;
-        padding: 2px;
     }
 
     .task-category-icon svg {
@@ -1717,21 +1693,11 @@ body.rainbow-mode .modal-close.focused {
     top: 32px;
     left: 32px;
     bottom: auto;
-    width: 32px;
-    height: 32px;
-    background: transparent;
-    color: #444;
-    box-shadow: none;
-}
-
-.auth-float:hover {
-    background: transparent;
-    color: #888;
 }
 
 .auth-float svg {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
 }
 
 .auth-float.focused {
