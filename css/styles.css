@@ -39,6 +39,7 @@ body {
     text-align: center;
     width: 100%;
     max-width: 400px;
+    position: relative;
 }
 
 .hidden {
@@ -207,6 +208,24 @@ body {
 }
 
 /* Task View */
+.task-close {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+    background: transparent;
+    color: #555;
+    border: none;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+.task-close:hover {
+    color: #fff;
+}
+
 .task-category-icon {
     margin-bottom: 8px;
 }

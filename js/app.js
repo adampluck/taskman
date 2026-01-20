@@ -137,6 +137,7 @@ const App = (function() {
 
     function bindEvents() {
         pickBtn.addEventListener('click', pickTask);
+        document.getElementById('close-task').addEventListener('click', closeTask);
         startBtn.addEventListener('click', startTimer);
         resetBtn.addEventListener('click', resetTimer);
         doneBtn.addEventListener('click', completeTask);
@@ -602,6 +603,12 @@ const App = (function() {
     function skipTask() {
         stopTimer();
         pickTask();
+    }
+
+    function closeTask() {
+        stopTimer();
+        currentTask = null;
+        showView(promptView);
     }
 
     function completeTask() {
