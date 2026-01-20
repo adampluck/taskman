@@ -9,6 +9,8 @@ html, body {
     position: fixed;
     width: 100%;
     height: 100%;
+    touch-action: pan-x pan-y;
+    -ms-touch-action: pan-x pan-y;
 }
 
 body {
@@ -17,6 +19,10 @@ body {
     color: #fff;
     -webkit-font-smoothing: antialiased;
     overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .app {
@@ -524,6 +530,12 @@ body {
 .task-input:focus {
     outline: none;
     border-color: #fff;
+}
+
+.task-input,
+.edit-input {
+    -webkit-user-select: text;
+    user-select: text;
 }
 
 .task-input::placeholder {
