@@ -1260,25 +1260,40 @@ const App = (function() {
                 } else if (e.key === 'Enter' || e.key === ' ') {
                     if (window._authFocusArea === 'close') {
                         e.preventDefault();
+                        playClick('select');
                         closeAuth.click();
                     } else if (window._authFocusArea === 'button') {
                         if (!signinView.classList.contains('hidden')) {
+                            e.preventDefault();
+                            playClick('select');
+                            const btn = document.querySelector('#otp-email-form .btn-add');
+                            btn.classList.add('active');
+                            setTimeout(function() { btn.classList.remove('active'); }, 150);
                             document.getElementById('otp-email-form').requestSubmit();
                         } else if (!otpView.classList.contains('hidden')) {
+                            e.preventDefault();
+                            playClick('select');
+                            const btn = document.querySelector('#otp-verify-form .btn-add');
+                            btn.classList.add('active');
+                            setTimeout(function() { btn.classList.remove('active'); }, 150);
                             document.getElementById('otp-verify-form').requestSubmit();
                         } else if (!accountView.classList.contains('hidden')) {
                             e.preventDefault();
+                            playClick('select');
                             document.getElementById('sign-out').click();
                         } else if (!migrateView.classList.contains('hidden')) {
                             e.preventDefault();
+                            playClick('select');
                             document.getElementById('migrate-yes').click();
                         }
                     } else if (window._authFocusArea === 'button2') {
                         if (!otpView.classList.contains('hidden')) {
                             e.preventDefault();
+                            playClick('select');
                             document.getElementById('auth-back').click();
                         } else {
                             e.preventDefault();
+                            playClick('select');
                             document.getElementById('migrate-no').click();
                         }
                     }

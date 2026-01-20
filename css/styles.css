@@ -1363,11 +1363,17 @@ body.rainbow-mode .modal-close.focused {
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    transition: opacity 0.15s;
+    transition: opacity 0.15s, transform 0.1s;
 }
 
 .btn-add:hover {
     opacity: 0.9;
+}
+
+.btn-add:active,
+.btn-add.active {
+    transform: scale(0.97);
+    opacity: 0.8;
 }
 
 .btn-add.focused {
