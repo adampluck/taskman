@@ -1,1 +1,1 @@
-js/config.js
+# Supabase anon key is safe to expose - RLS protects data
