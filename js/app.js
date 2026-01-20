@@ -58,65 +58,7 @@ const App = (function() {
     let manageStatusValue = 'all';
     let addFocusArea = 'category'; // For add modal keyboard nav
 
-    // Check if on mobile (for scroll-snap behavior)
-    function isMobile() {
-        return window.innerWidth <= 480;
-    }
-
-    // Scroll wheel to center a specific index
-    function scrollWheelToIndex(wheel, index, smooth) {
-        if (!isMobile()) return;
-        const items = wheel.querySelectorAll('.wheel-item');
-        if (items[index]) {
-            items[index].scrollIntoView({
-                behavior: smooth ? 'smooth' : 'auto',
-                block: 'nearest',
-                inline: 'center'
-            });
-        }
-    }
-
-    // Get the index of the centered item based on scroll position
-    function getCenteredIndex(wheel) {
-        const items = wheel.querySelectorAll('.wheel-item');
-        const wheelRect = wheel.getBoundingClientRect();
-        const wheelCenter = wheelRect.left + wheelRect.width / 2;
-
-        let closestIndex = 0;
-        let closestDistance = Infinity;
-
-        items.forEach((item, i) => {
-            const itemRect = item.getBoundingClientRect();
-            const itemCenter = itemRect.left + itemRect.width / 2;
-            const distance = Math.abs(itemCenter - wheelCenter);
-
-            if (distance < closestDistance) {
-                closestDistance = distance;
-                closestIndex = i;
-            }
-        });
-
-        return closestIndex;
-    }
-
-    // Add scroll-end listener for wheel elements
-    function addScrollSnapListener(wheel, onScrollEnd) {
-        let scrollTimeout = null;
-
-        wheel.addEventListener('scroll', function() {
-            if (!isMobile()) return;
-
-            if (scrollTimeout) {
-                clearTimeout(scrollTimeout);
-            }
-
-            scrollTimeout = setTimeout(function() {
-                onScrollEnd();
-            }, 100);
-        }, { passive: true });
-    }
-
-    // Swipe detection helper for time chips
+    // Swipe detection helper
     function addSwipeListener(element, onSwipeLeft, onSwipeRight) {
         let touchStartX = 0;
         let touchEndX = 0;
@@ -208,7 +150,7 @@ const App = (function() {
         const categories = ['work', 'personal', 'shopping', 'health', 'other'];
         const wheelItems = pickerCategory.querySelectorAll('.wheel-item');
 
-        function updateWheel(newIndex, scrollTo) {
+        function updateWheel(newIndex) {
             // Wrap around for infinite scroll
             newIndex = ((newIndex % categories.length) + categories.length) % categories.length;
             pickerCategory.dataset.index = newIndex;
@@ -223,11 +165,6 @@ const App = (function() {
                 item.dataset.offset = offset;
                 item.classList.toggle('active', offset === 0);
             });
-
-            // Scroll to center the item on mobile
-            if (scrollTo !== false) {
-                scrollWheelToIndex(pickerCategory, newIndex, true);
-            }
 
             // Update pick button state
             updatePickButton();
@@ -244,21 +181,19 @@ const App = (function() {
             }
         });
 
-        // Scroll-snap listener for mobile (main screen category)
-        addScrollSnapListener(pickerCategory, function() {
-            const centeredIndex = getCenteredIndex(pickerCategory);
-            const currentIndex = parseInt(pickerCategory.dataset.index, 10);
-            if (centeredIndex !== currentIndex) {
-                updateWheel(centeredIndex, false); // Don't re-scroll
+        // Swipe on category wheel (main screen)
+        addSwipeListener(pickerCategory,
+            function() { // swipe left = next
+                const currentIndex = parseInt(pickerCategory.dataset.index, 10);
+                updateWheel(currentIndex + 1);
+                playClick('scroll');
+            },
+            function() { // swipe right = prev
+                const currentIndex = parseInt(pickerCategory.dataset.index, 10);
+                updateWheel(currentIndex - 1);
                 playClick('scroll');
             }
-        });
-
-        // Initialize scroll position on mobile
-        if (isMobile()) {
-            const initialIndex = parseInt(pickerCategory.dataset.index, 10);
-            scrollWheelToIndex(pickerCategory, initialIndex, false);
-        }
+        );
 
         // Time chip selection
         pickerTime.addEventListener('click', function(e) {
@@ -380,7 +315,7 @@ const App = (function() {
         // Add modal - category wheel
         const addWheelItems = addCategory.querySelectorAll('.wheel-item');
 
-        function updateAddWheel(newIndex, scrollTo) {
+        function updateAddWheel(newIndex) {
             newIndex = ((newIndex % categories.length) + categories.length) % categories.length;
             addCategory.dataset.index = newIndex;
             addCategory.dataset.value = categories[newIndex];
@@ -392,11 +327,6 @@ const App = (function() {
                 item.dataset.offset = offset;
                 item.classList.toggle('active', offset === 0);
             });
-
-            // Scroll to center the item on mobile
-            if (scrollTo !== false) {
-                scrollWheelToIndex(addCategory, newIndex, true);
-            }
         }
 
         addCategory.addEventListener('click', function(e) {
@@ -409,15 +339,19 @@ const App = (function() {
             }
         });
 
-        // Scroll-snap listener for mobile (add modal category)
-        addScrollSnapListener(addCategory, function() {
-            const centeredIndex = getCenteredIndex(addCategory);
-            const currentIndex = parseInt(addCategory.dataset.index, 10);
-            if (centeredIndex !== currentIndex) {
-                updateAddWheel(centeredIndex, false); // Don't re-scroll
+        // Swipe on category wheel (add modal)
+        addSwipeListener(addCategory,
+            function() { // swipe left = next
+                const currentIndex = parseInt(addCategory.dataset.index, 10);
+                updateAddWheel(currentIndex + 1);
+                playClick('scroll');
+            },
+            function() { // swipe right = prev
+                const currentIndex = parseInt(addCategory.dataset.index, 10);
+                updateAddWheel(currentIndex - 1);
                 playClick('scroll');
             }
-        });
+        );
 
         // Add modal - time chip selection
         addTime.addEventListener('click', function(e) {
@@ -835,14 +769,6 @@ const App = (function() {
         addTime.dataset.focused = 'false';
         const addBtnEl = taskForm.querySelector('.btn-add');
         if (addBtnEl) addBtnEl.classList.remove('focused');
-
-        // Initialize scroll position on mobile after modal is visible
-        if (isMobile()) {
-            setTimeout(function() {
-                const initialIndex = parseInt(addCategory.dataset.index, 10);
-                scrollWheelToIndex(addCategory, initialIndex, false);
-            }, 10);
-        }
     }
 
     function closeAddModal() {
