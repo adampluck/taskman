@@ -254,21 +254,28 @@
                 <h2>Sign In</h2>
                 <p class="auth-subtitle">Sync your tasks across devices</p>
 
-                <form id="magic-link-form">
+                <form id="otp-email-form">
                     <input type="email" id="auth-email" class="task-input"
                            placeholder="your@email.com" required autocomplete="email">
-                    <button type="submit" class="btn-add">Send Magic Link</button>
+                    <button type="submit" class="btn-add">Send Code</button>
                 </form>
 
                 <p class="auth-guest-note">Or continue as guest - tasks stay on this device only</p>
             </div>
 
-            <!-- Magic Link Sent View -->
-            <div id="auth-check-email" class="auth-view hidden">
+            <!-- OTP Code Entry View -->
+            <div id="auth-otp" class="auth-view hidden">
                 <div class="auth-icon-large">&#9993;</div>
-                <h2>Check Your Email</h2>
-                <p>We sent a magic link to <strong id="sent-email"></strong></p>
-                <p class="auth-subtitle">Click the link in the email to sign in</p>
+                <h2>Enter Code</h2>
+                <p class="auth-subtitle-padded">We sent a 6-digit code to <strong id="sent-email"></strong></p>
+
+                <form id="otp-verify-form">
+                    <input type="text" id="otp-code" class="task-input otp-input"
+                           placeholder="000000" required maxlength="6" pattern="[0-9]{6}"
+                           inputmode="numeric" autocomplete="one-time-code">
+                    <button type="submit" class="btn-add">Verify</button>
+                </form>
+
                 <button id="auth-back" class="btn-secondary">Back</button>
             </div>
 

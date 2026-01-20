@@ -29,19 +29,33 @@ const Auth = (function() {
         }
     }
 
-    async function signInWithMagicLink(email) {
+    async function sendOtp(email) {
         const client = getSupabase();
         if (!client) throw new Error('Supabase not configured');
 
         const { error } = await client.auth.signInWithOtp({
             email: email,
             options: {
-                emailRedirectTo: window.location.origin + window.location.pathname
+                shouldCreateUser: true
             }
         });
 
         if (error) throw error;
         return { success: true };
+    }
+
+    async function verifyOtp(email, token) {
+        const client = getSupabase();
+        if (!client) throw new Error('Supabase not configured');
+
+        const { data, error } = await client.auth.verifyOtp({
+            email: email,
+            token: token,
+            type: 'email'
+        });
+
+        if (error) throw error;
+        return data;
     }
 
     async function signInWithPasskey() {
@@ -120,14 +134,11 @@ const Auth = (function() {
 
     return {
         init: init,
-        signInWithMagicLink: signInWithMagicLink,
-        signInWithPasskey: signInWithPasskey,
-        registerPasskey: registerPasskey,
+        sendOtp: sendOtp,
+        verifyOtp: verifyOtp,
         signOut: signOut,
         onAuthStateChange: onAuthStateChange,
         getUser: getUser,
-        isAuthenticated: isAuthenticated,
-        isPasskeySupported: isPasskeySupported,
-        checkPasskeyAvailable: checkPasskeyAvailable
+        isAuthenticated: isAuthenticated
     };
 })();

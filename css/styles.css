@@ -1805,6 +1805,20 @@ body.light-mode .sync-status.syncing .sync-icon::before {
     font-size: 0.875rem;
 }
 
+.auth-subtitle-padded {
+    color: #666;
+    margin-bottom: 20px;
+    padding: 0 16px;
+    font-size: 0.875rem;
+}
+
+.otp-input {
+    text-align: center;
+    font-size: 1.5rem;
+    letter-spacing: 0.5em;
+    font-family: monospace;
+}
+
 .auth-modal-content form {
     width: 100%;
 }
