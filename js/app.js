@@ -11,9 +11,28 @@ const App = (function() {
 
     // Task elements
     const taskTitle = document.getElementById('task-title');
-    const taskMeta = document.getElementById('task-meta');
+    const taskCategoryIcon = document.getElementById('task-category-icon');
+    const taskTimeLimit = document.getElementById('task-time-limit');
+    const taskTimer = document.getElementById('task-timer');
+    const timerDisplay = document.getElementById('timer-display');
+    const startBtn = document.getElementById('start-btn');
+    const resetBtn = document.getElementById('reset-btn');
     const doneBtn = document.getElementById('done-btn');
     const skipBtn = document.getElementById('skip-btn');
+
+    // Category icons SVG
+    const categoryIcons = {
+        work: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg>',
+        personal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+        shopping: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
+        health: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+        other: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>'
+    };
+
+    // Timer state
+    let timerInterval = null;
+    let timerSeconds = 0;
+    let timerLimit = 0;
 
     // Add modal elements
     const addToggle = document.getElementById('add-toggle');
@@ -39,7 +58,65 @@ const App = (function() {
     let manageStatusValue = 'all';
     let addFocusArea = 'category'; // For add modal keyboard nav
 
-    // Swipe detection helper
+    // Check if on mobile (for scroll-snap behavior)
+    function isMobile() {
+        return window.innerWidth <= 480;
+    }
+
+    // Scroll wheel to center a specific index
+    function scrollWheelToIndex(wheel, index, smooth) {
+        if (!isMobile()) return;
+        const items = wheel.querySelectorAll('.wheel-item');
+        if (items[index]) {
+            items[index].scrollIntoView({
+                behavior: smooth ? 'smooth' : 'auto',
+                block: 'nearest',
+                inline: 'center'
+            });
+        }
+    }
+
+    // Get the index of the centered item based on scroll position
+    function getCenteredIndex(wheel) {
+        const items = wheel.querySelectorAll('.wheel-item');
+        const wheelRect = wheel.getBoundingClientRect();
+        const wheelCenter = wheelRect.left + wheelRect.width / 2;
+
+        let closestIndex = 0;
+        let closestDistance = Infinity;
+
+        items.forEach((item, i) => {
+            const itemRect = item.getBoundingClientRect();
+            const itemCenter = itemRect.left + itemRect.width / 2;
+            const distance = Math.abs(itemCenter - wheelCenter);
+
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                closestIndex = i;
+            }
+        });
+
+        return closestIndex;
+    }
+
+    // Add scroll-end listener for wheel elements
+    function addScrollSnapListener(wheel, onScrollEnd) {
+        let scrollTimeout = null;
+
+        wheel.addEventListener('scroll', function() {
+            if (!isMobile()) return;
+
+            if (scrollTimeout) {
+                clearTimeout(scrollTimeout);
+            }
+
+            scrollTimeout = setTimeout(function() {
+                onScrollEnd();
+            }, 100);
+        }, { passive: true });
+    }
+
+    // Swipe detection helper for time chips
     function addSwipeListener(element, onSwipeLeft, onSwipeRight) {
         let touchStartX = 0;
         let touchEndX = 0;
@@ -96,12 +173,32 @@ const App = (function() {
     function init() {
         bindEvents();
         registerServiceWorker();
+        updatePickButton();
+    }
+
+    function updatePickButton() {
+        const category = pickerCategory.dataset.value;
+        const maxTime = parseInt(pickerTime.dataset.value, 10);
+
+        let tasks = TaskStorage.getTasks().filter(t => !t.completed);
+
+        if (category !== 'all') {
+            tasks = tasks.filter(t => t.category === category);
+        }
+
+        if (maxTime > 0) {
+            tasks = tasks.filter(t => t.timeEstimate <= maxTime);
+        }
+
+        pickBtn.disabled = tasks.length === 0;
     }
 
     function bindEvents() {
         pickBtn.addEventListener('click', pickTask);
+        startBtn.addEventListener('click', startTimer);
+        resetBtn.addEventListener('click', resetTimer);
         doneBtn.addEventListener('click', completeTask);
-        skipBtn.addEventListener('click', pickTask);
+        skipBtn.addEventListener('click', skipTask);
         addToggle.addEventListener('click', openAddModal);
         closeModal.addEventListener('click', closeAddModal);
         showAddBtn.addEventListener('click', openAddModal);
@@ -111,7 +208,7 @@ const App = (function() {
         const categories = ['work', 'personal', 'shopping', 'health', 'other'];
         const wheelItems = pickerCategory.querySelectorAll('.wheel-item');
 
-        function updateWheel(newIndex) {
+        function updateWheel(newIndex, scrollTo) {
             // Wrap around for infinite scroll
             newIndex = ((newIndex % categories.length) + categories.length) % categories.length;
             pickerCategory.dataset.index = newIndex;
@@ -126,6 +223,14 @@ const App = (function() {
                 item.dataset.offset = offset;
                 item.classList.toggle('active', offset === 0);
             });
+
+            // Scroll to center the item on mobile
+            if (scrollTo !== false) {
+                scrollWheelToIndex(pickerCategory, newIndex, true);
+            }
+
+            // Update pick button state
+            updatePickButton();
         }
 
         // Click on wheel item
@@ -139,19 +244,21 @@ const App = (function() {
             }
         });
 
-        // Swipe on category wheel (main screen)
-        addSwipeListener(pickerCategory,
-            function() { // swipe left = next
-                const currentIndex = parseInt(pickerCategory.dataset.index, 10);
-                updateWheel(currentIndex + 1);
-                playClick('scroll');
-            },
-            function() { // swipe right = prev
-                const currentIndex = parseInt(pickerCategory.dataset.index, 10);
-                updateWheel(currentIndex - 1);
+        // Scroll-snap listener for mobile (main screen category)
+        addScrollSnapListener(pickerCategory, function() {
+            const centeredIndex = getCenteredIndex(pickerCategory);
+            const currentIndex = parseInt(pickerCategory.dataset.index, 10);
+            if (centeredIndex !== currentIndex) {
+                updateWheel(centeredIndex, false); // Don't re-scroll
                 playClick('scroll');
             }
-        );
+        });
+
+        // Initialize scroll position on mobile
+        if (isMobile()) {
+            const initialIndex = parseInt(pickerCategory.dataset.index, 10);
+            scrollWheelToIndex(pickerCategory, initialIndex, false);
+        }
 
         // Time chip selection
         pickerTime.addEventListener('click', function(e) {
@@ -161,6 +268,7 @@ const App = (function() {
             chip.classList.add('selected');
             pickerTime.dataset.value = chip.dataset.value;
             playClick('scroll');
+            updatePickButton();
         });
 
         // Swipe on time options (main screen)
@@ -196,6 +304,7 @@ const App = (function() {
             timeChips.forEach(c => c.classList.remove('selected'));
             timeChips[index].classList.add('selected');
             pickerTime.dataset.value = timeChips[index].dataset.value;
+            updatePickButton();
         }
 
         // Initialize focus
@@ -271,7 +380,7 @@ const App = (function() {
         // Add modal - category wheel
         const addWheelItems = addCategory.querySelectorAll('.wheel-item');
 
-        function updateAddWheel(newIndex) {
+        function updateAddWheel(newIndex, scrollTo) {
             newIndex = ((newIndex % categories.length) + categories.length) % categories.length;
             addCategory.dataset.index = newIndex;
             addCategory.dataset.value = categories[newIndex];
@@ -283,6 +392,11 @@ const App = (function() {
                 item.dataset.offset = offset;
                 item.classList.toggle('active', offset === 0);
             });
+
+            // Scroll to center the item on mobile
+            if (scrollTo !== false) {
+                scrollWheelToIndex(addCategory, newIndex, true);
+            }
         }
 
         addCategory.addEventListener('click', function(e) {
@@ -295,19 +409,15 @@ const App = (function() {
             }
         });
 
-        // Swipe on category wheel (add modal)
-        addSwipeListener(addCategory,
-            function() { // swipe left = next
-                const currentIndex = parseInt(addCategory.dataset.index, 10);
-                updateAddWheel(currentIndex + 1);
-                playClick('scroll');
-            },
-            function() { // swipe right = prev
-                const currentIndex = parseInt(addCategory.dataset.index, 10);
-                updateAddWheel(currentIndex - 1);
+        // Scroll-snap listener for mobile (add modal category)
+        addScrollSnapListener(addCategory, function() {
+            const centeredIndex = getCenteredIndex(addCategory);
+            const currentIndex = parseInt(addCategory.dataset.index, 10);
+            if (centeredIndex !== currentIndex) {
+                updateAddWheel(centeredIndex, false); // Don't re-scroll
                 playClick('scroll');
             }
-        );
+        });
 
         // Add modal - time chip selection
         addTime.addEventListener('click', function(e) {
@@ -409,6 +519,7 @@ const App = (function() {
         });
 
         manageList.addEventListener('click', handleManageAction);
+        document.getElementById('delete-all-btn').addEventListener('click', deleteAllCompleted);
 
         // Keyboard handler for modals
         document.addEventListener('keydown', function(e) {
@@ -505,6 +616,9 @@ const App = (function() {
     }
 
     function pickTask() {
+        // Stop any running timer
+        stopTimer();
+
         const category = pickerCategory.dataset.value;
         const maxTime = parseInt(pickerTime.dataset.value, 10);
 
@@ -526,21 +640,189 @@ const App = (function() {
         const randomIndex = Math.floor(Math.random() * tasks.length);
         currentTask = tasks[randomIndex];
 
+        // Show category icon
+        taskCategoryIcon.innerHTML = categoryIcons[currentTask.category] || categoryIcons.other;
+
+        // Show time limit if applicable
+        if (currentTask.timeEstimate > 0) {
+            taskTimeLimit.textContent = formatTime(currentTask.timeEstimate);
+            timerLimit = currentTask.timeEstimate * 60; // Convert to seconds
+            startBtn.classList.remove('hidden');
+        } else {
+            taskTimeLimit.textContent = '';
+            timerLimit = 0;
+            startBtn.classList.add('hidden');
+        }
+
+        // Reset timer display
+        timerSeconds = 0;
+        timerDisplay.textContent = '00:00';
+        taskTimer.classList.add('hidden');
+        taskTimer.classList.remove('running', 'warning', 'overtime');
+
         taskTitle.textContent = currentTask.title;
-        taskMeta.innerHTML = `
-            <span>${currentTask.category}</span>
-            <span>${formatTime(currentTask.timeEstimate)}</span>
-        `;
 
         showView(taskView);
     }
 
+    function skipTask() {
+        stopTimer();
+        pickTask();
+    }
+
     function completeTask() {
+        stopTimer();
         if (currentTask) {
             TaskStorage.toggleComplete(currentTask.id);
             currentTask = null;
         }
+        celebrate();
         showView(promptView);
+        updatePickButton();
+    }
+
+    function celebrate() {
+        // Create burst effect
+        const burst = document.createElement('div');
+        burst.className = 'celebration-burst';
+        document.body.appendChild(burst);
+
+        // Create confetti
+        const colors = ['#22c55e', '#4ade80', '#86efac', '#fbbf24', '#60a5fa'];
+        const celebration = document.createElement('div');
+        celebration.className = 'celebration';
+
+        for (let i = 0; i < 30; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * 100 + '%';
+            confetti.style.top = '-10px';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+            confetti.style.animation = `confetti-fall ${1 + Math.random() * 1}s ease-out forwards`;
+            confetti.style.animationDelay = Math.random() * 0.3 + 's';
+            celebration.appendChild(confetti);
+        }
+
+        document.body.appendChild(celebration);
+
+        // Play celebration sound
+        playClick('select');
+
+        // Clean up after animation
+        setTimeout(function() {
+            burst.remove();
+            celebration.remove();
+        }, 2000);
+    }
+
+    // Timer functions
+    function startTimer() {
+        if (timerInterval) return; // Already running
+
+        // Request notification permission
+        requestNotificationPermission();
+
+        // Hide start button, show timer
+        startBtn.classList.add('hidden');
+        taskTimer.classList.remove('hidden');
+        taskTimer.classList.add('running');
+
+        timerInterval = setInterval(function() {
+            timerSeconds++;
+            updateTimerDisplay();
+
+            // Check for warning (80% of time limit)
+            if (timerLimit > 0) {
+                const warningThreshold = timerLimit * 0.8;
+                if (timerSeconds >= timerLimit) {
+                    taskTimer.classList.remove('warning');
+                    taskTimer.classList.add('overtime');
+
+                    // Send notification only once when time is up
+                    if (timerSeconds === timerLimit) {
+                        sendTimerNotification();
+                    }
+                } else if (timerSeconds >= warningThreshold) {
+                    taskTimer.classList.add('warning');
+                }
+            }
+        }, 1000);
+    }
+
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    }
+
+    function resetTimer() {
+        stopTimer();
+        timerSeconds = 0;
+        updateTimerDisplay();
+        taskTimer.classList.remove('warning', 'overtime');
+        taskTimer.classList.add('running');
+
+        // Restart the timer
+        timerInterval = setInterval(function() {
+            timerSeconds++;
+            updateTimerDisplay();
+
+            if (timerLimit > 0) {
+                const warningThreshold = timerLimit * 0.8;
+                if (timerSeconds >= timerLimit) {
+                    taskTimer.classList.remove('warning');
+                    taskTimer.classList.add('overtime');
+                    if (timerSeconds === timerLimit) {
+                        sendTimerNotification();
+                    }
+                } else if (timerSeconds >= warningThreshold) {
+                    taskTimer.classList.add('warning');
+                }
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        const hours = Math.floor(timerSeconds / 3600);
+        const mins = Math.floor((timerSeconds % 3600) / 60);
+        const secs = timerSeconds % 60;
+
+        if (hours > 0) {
+            timerDisplay.textContent = String(hours).padStart(2, '0') + ':' +
+                                        String(mins).padStart(2, '0') + ':' +
+                                        String(secs).padStart(2, '0');
+        } else {
+            timerDisplay.textContent = String(mins).padStart(2, '0') + ':' +
+                                        String(secs).padStart(2, '0');
+        }
+    }
+
+    // Notification functions
+    function requestNotificationPermission() {
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    }
+
+    function sendTimerNotification() {
+        if ('Notification' in window && Notification.permission === 'granted') {
+            const notification = new Notification('Time\'s up!', {
+                body: currentTask ? currentTask.title : 'Your task timer has ended',
+                icon: 'icons/icon-192.svg',
+                tag: 'timer-notification',
+                requireInteraction: true
+            });
+
+            // Auto close after 10 seconds
+            setTimeout(function() {
+                notification.close();
+            }, 10000);
+        }
+
+        // Also play a sound
+        playClick('select');
     }
 
     // Add Modal
@@ -553,11 +835,23 @@ const App = (function() {
         addTime.dataset.focused = 'false';
         const addBtnEl = taskForm.querySelector('.btn-add');
         if (addBtnEl) addBtnEl.classList.remove('focused');
+
+        // Initialize scroll position on mobile after modal is visible
+        if (isMobile()) {
+            setTimeout(function() {
+                const initialIndex = parseInt(addCategory.dataset.index, 10);
+                scrollWheelToIndex(addCategory, initialIndex, false);
+            }, 10);
+        }
     }
 
     function closeAddModal() {
         addModal.classList.add('hidden');
         taskForm.reset();
+        // If we were on empty view, go back to prompt view since we may have added tasks
+        if (!emptyView.classList.contains('hidden')) {
+            showView(promptView);
+        }
     }
 
     function addTask(e) {
@@ -576,6 +870,9 @@ const App = (function() {
 
         // Show toast
         showToast('Task added');
+
+        // Update pick button state
+        updatePickButton();
     }
 
     function showToast(message) {
@@ -612,6 +909,17 @@ const App = (function() {
             tasks = tasks.filter(t => t.completed);
         }
 
+        // Sort: active tasks first, then completed
+        tasks.sort(function(a, b) {
+            if (a.completed === b.completed) return 0;
+            return a.completed ? 1 : -1;
+        });
+
+        // Check if there are completed tasks to show delete all button
+        const allTasks = TaskStorage.getTasks();
+        const completedCount = allTasks.filter(t => t.completed).length;
+        updateDeleteAllButton(completedCount);
+
         if (tasks.length === 0) {
             manageList.innerHTML = '';
             manageEmpty.classList.remove('hidden');
@@ -620,6 +928,26 @@ const App = (function() {
 
         manageEmpty.classList.add('hidden');
         manageList.innerHTML = tasks.map(renderManageItem).join('');
+    }
+
+    function updateDeleteAllButton(completedCount) {
+        const deleteAllBtn = document.getElementById('delete-all-btn');
+        if (completedCount > 0) {
+            deleteAllBtn.classList.remove('hidden');
+            deleteAllBtn.textContent = 'Delete ' + completedCount + ' completed';
+        } else {
+            deleteAllBtn.classList.add('hidden');
+        }
+    }
+
+    function deleteAllCompleted() {
+        const tasks = TaskStorage.getTasks();
+        const completedIds = tasks.filter(t => t.completed).map(t => t.id);
+        completedIds.forEach(function(id) {
+            TaskStorage.deleteTask(id);
+        });
+        renderManageList();
+        updatePickButton();
     }
 
     function renderManageItem(task) {
@@ -697,6 +1025,7 @@ const App = (function() {
     function deleteTaskById(taskId) {
         TaskStorage.deleteTask(taskId);
         renderManageList();
+        updatePickButton();
     }
 
     function formatTime(minutes) {

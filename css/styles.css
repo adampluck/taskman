@@ -61,7 +61,6 @@ body {
     border-radius: 12px;
     outline: none;
     height: 80px;
-    touch-action: pan-y;
 }
 
 .category-wheel[data-focused="true"] {
@@ -83,6 +82,7 @@ body {
     transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
     height: 56px;
     min-width: 48px;
+    flex-shrink: 0;
 }
 
 .wheel-item svg {
@@ -178,41 +178,79 @@ body {
     transform: scale(0.98);
 }
 
+.btn-pick:disabled {
+    background: #333;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.btn-pick:disabled:hover {
+    opacity: 1;
+}
+
+.btn-pick:disabled:active {
+    transform: none;
+}
+
 .btn-pick.focused {
     outline: 2px solid #fff;
     outline-offset: 4px;
 }
 
 /* Task View */
-.label {
-    font-size: 0.875rem;
+.task-category-icon {
+    margin-bottom: 8px;
+}
+
+.task-category-icon svg {
+    width: 48px;
+    height: 48px;
     color: #666;
+}
+
+.task-time-limit {
+    font-size: 0.75rem;
+    color: #555;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    margin-bottom: 16px;
+    margin-bottom: 24px;
+    min-height: 18px;
 }
 
 .task-title {
     font-size: 2rem;
     font-weight: 600;
     line-height: 1.3;
-    margin-bottom: 16px;
+    margin-bottom: 24px;
     word-break: break-word;
 }
 
-.task-meta {
+.task-timer {
     display: flex;
-    justify-content: center;
-    gap: 16px;
-    color: #666;
-    font-size: 0.875rem;
-    margin-bottom: 48px;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
 }
 
-.task-meta span {
-    display: flex;
-    align-items: center;
-    gap: 6px;
+.task-timer #timer-display {
+    font-size: 2.5rem;
+    font-weight: 300;
+    font-variant-numeric: tabular-nums;
+    color: #888;
+    letter-spacing: 0.05em;
+}
+
+.task-timer.running #timer-display {
+    color: #fff;
+}
+
+.task-timer.warning #timer-display {
+    color: #f59e0b;
+}
+
+.task-timer.overtime #timer-display {
+    color: #ef4444;
 }
 
 .task-actions {
@@ -221,20 +259,108 @@ body {
     gap: 16px;
 }
 
-.btn-done {
+.btn-start {
     padding: 14px 40px;
     font-size: 1rem;
     font-weight: 600;
-    background: #22c55e;
-    color: #fff;
+    background: #fff;
+    color: #000;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     transition: opacity 0.15s;
 }
 
-.btn-done:hover {
+.btn-start:hover {
     opacity: 0.9;
+}
+
+.btn-reset {
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    background: transparent;
+    color: #555;
+    border: 1px solid #333;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-reset:hover {
+    border-color: #555;
+    color: #888;
+}
+
+.btn-done {
+    padding: 14px 40px;
+    font-size: 1rem;
+    font-weight: 600;
+    background: transparent;
+    color: #22c55e;
+    border: 1px solid #22c55e;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.btn-done:hover {
+    background: rgba(34, 197, 94, 0.1);
+}
+
+/* Celebration effect */
+.celebration {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+.confetti {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    opacity: 0;
+}
+
+@keyframes confetti-fall {
+    0% {
+        opacity: 1;
+        transform: translateY(0) rotate(0deg) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(100vh) rotate(720deg) scale(0.5);
+    }
+}
+
+@keyframes celebration-burst {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+.celebration-burst {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 100px;
+    height: 100px;
+    margin: -50px 0 0 -50px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(34, 197, 94, 0.4) 0%, transparent 70%);
+    animation: celebration-burst 0.6s ease-out forwards;
+    pointer-events: none;
+    z-index: 1000;
 }
 
 .btn-skip {
@@ -544,6 +670,24 @@ body {
     padding: 48px 0;
 }
 
+.btn-delete-all {
+    width: 100%;
+    margin-top: 16px;
+    padding: 12px;
+    font-size: 0.875rem;
+    background: transparent;
+    color: #666;
+    border: 1px solid #333;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-delete-all:hover {
+    border-color: #dc2626;
+    color: #dc2626;
+}
+
 /* Task Item in Manage */
 .manage-item {
     display: flex;
@@ -657,16 +801,32 @@ body {
         font-size: 1.5rem;
     }
 
-    .category-wheel {
-        gap: 2px;
-        padding: 8px 4px;
+    .category-wheel,
+    .add-category-wheel {
+        gap: 0;
+        padding: 8px 0;
         height: 70px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        /* Padding to allow first/last items to center */
+        padding-left: calc(50% - 28px);
+        padding-right: calc(50% - 28px);
+    }
+
+    .category-wheel::-webkit-scrollbar,
+    .add-category-wheel::-webkit-scrollbar {
+        display: none;
     }
 
     .wheel-item {
         padding: 6px 8px;
         height: 50px;
-        min-width: 40px;
+        min-width: 56px;
+        flex-shrink: 0;
+        scroll-snap-align: center;
     }
 
     .wheel-item svg {
@@ -699,5 +859,26 @@ body {
 
     .manage-float {
         left: 24px;
+    }
+
+    .task-category-icon svg {
+        width: 40px;
+        height: 40px;
+    }
+
+    .task-timer #timer-display {
+        font-size: 2rem;
+    }
+
+    .btn-start,
+    .btn-done,
+    .btn-skip {
+        padding: 12px 24px;
+        font-size: 0.875rem;
+    }
+
+    .btn-reset {
+        padding: 8px 16px;
+        font-size: 0.75rem;
     }
 }

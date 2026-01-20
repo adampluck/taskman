@@ -51,10 +51,15 @@
             </div>
 
             <div id="task-view" class="view hidden">
-                <p class="label">Your task:</p>
+                <div id="task-category-icon" class="task-category-icon"></div>
+                <div id="task-time-limit" class="task-time-limit"></div>
                 <h1 id="task-title" class="task-title"></h1>
-                <div id="task-meta" class="task-meta"></div>
+                <div id="task-timer" class="task-timer hidden">
+                    <span id="timer-display">00:00</span>
+                    <button id="reset-btn" class="btn-reset">Reset</button>
+                </div>
                 <div class="task-actions">
+                    <button id="start-btn" class="btn-start hidden">Start</button>
                     <button id="done-btn" class="btn-done">Done</button>
                     <button id="skip-btn" class="btn-skip">Skip</button>
                 </div>
@@ -158,6 +163,7 @@
                     <!-- Tasks rendered here -->
                 </div>
                 <p id="manage-empty" class="manage-empty hidden">No tasks yet.</p>
+                <button id="delete-all-btn" class="btn-delete-all hidden">Delete completed</button>
             </div>
         </div>
     </div>
