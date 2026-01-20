@@ -1719,15 +1719,10 @@ body.rainbow-mode .auth-float.focused {
 }
 
 body.authenticated #auth-toggle .icon-user {
-    display: none;
-}
-
-body.authenticated #auth-toggle .icon-user-check {
-    display: block;
     color: #22c55e;
 }
 
-body.authenticated.light-mode #auth-toggle .icon-user-check {
+body.authenticated.light-mode #auth-toggle .icon-user {
     color: #16a34a;
 }
 
