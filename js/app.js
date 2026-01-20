@@ -39,6 +39,29 @@ const App = (function() {
     let manageStatusValue = 'all';
     let addFocusArea = 'category'; // For add modal keyboard nav
 
+    // Swipe detection helper
+    function addSwipeListener(element, onSwipeLeft, onSwipeRight) {
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const minSwipeDistance = 50;
+
+        element.addEventListener('touchstart', function(e) {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        element.addEventListener('touchend', function(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            const distance = touchEndX - touchStartX;
+            if (Math.abs(distance) >= minSwipeDistance) {
+                if (distance > 0) {
+                    onSwipeRight();
+                } else {
+                    onSwipeLeft();
+                }
+            }
+        }, { passive: true });
+    }
+
     // Audio context for UI sounds
     let audioCtx = null;
     function playClick(type) {
@@ -116,6 +139,20 @@ const App = (function() {
             }
         });
 
+        // Swipe on category wheel (main screen)
+        addSwipeListener(pickerCategory,
+            function() { // swipe left = next
+                const currentIndex = parseInt(pickerCategory.dataset.index, 10);
+                updateWheel(currentIndex + 1);
+                playClick('scroll');
+            },
+            function() { // swipe right = prev
+                const currentIndex = parseInt(pickerCategory.dataset.index, 10);
+                updateWheel(currentIndex - 1);
+                playClick('scroll');
+            }
+        );
+
         // Time chip selection
         pickerTime.addEventListener('click', function(e) {
             const chip = e.target.closest('.time-chip');
@@ -125,6 +162,20 @@ const App = (function() {
             pickerTime.dataset.value = chip.dataset.value;
             playClick('scroll');
         });
+
+        // Swipe on time options (main screen)
+        addSwipeListener(pickerTime,
+            function() { // swipe left = next
+                const idx = getSelectedTimeIndex();
+                selectTimeChip(idx + 1);
+                playClick('scroll');
+            },
+            function() { // swipe right = prev
+                const idx = getSelectedTimeIndex();
+                selectTimeChip(idx - 1);
+                playClick('scroll');
+            }
+        );
 
         // Keyboard navigation for main screen
         let focusArea = 'category'; // 'category', 'time', 'button'
@@ -244,6 +295,20 @@ const App = (function() {
             }
         });
 
+        // Swipe on category wheel (add modal)
+        addSwipeListener(addCategory,
+            function() { // swipe left = next
+                const currentIndex = parseInt(addCategory.dataset.index, 10);
+                updateAddWheel(currentIndex + 1);
+                playClick('scroll');
+            },
+            function() { // swipe right = prev
+                const currentIndex = parseInt(addCategory.dataset.index, 10);
+                updateAddWheel(currentIndex - 1);
+                playClick('scroll');
+            }
+        );
+
         // Add modal - time chip selection
         addTime.addEventListener('click', function(e) {
             const chip = e.target.closest('.time-chip');
@@ -253,6 +318,20 @@ const App = (function() {
             addTime.dataset.value = chip.dataset.value;
             playClick('scroll');
         });
+
+        // Swipe on time options (add modal)
+        addSwipeListener(addTime,
+            function() { // swipe left = next
+                const idx = getAddSelectedTimeIndex();
+                selectAddTimeChip(idx + 1);
+                playClick('scroll');
+            },
+            function() { // swipe right = prev
+                const idx = getAddSelectedTimeIndex();
+                selectAddTimeChip(idx - 1);
+                playClick('scroll');
+            }
+        );
 
         // Add modal keyboard navigation
         const addTimeChips = Array.from(addTime.querySelectorAll('.time-chip'));
