@@ -1,11 +1,11 @@
 {
-    "name": "Task Manager",
-    "short_name": "Tasks",
+    "name": "Just Do It",
+    "short_name": "Do It",
     "description": "A task manager with voice input support",
-    "start_url": "/tasktest/",
+    "start_url": "/taskman/",
     "display": "standalone",
-    "background_color": "#ffffff",
-    "theme_color": "#4a90d9",
+    "background_color": "#000000",
+    "theme_color": "#000000",
     "orientation": "portrait-primary",
     "icons": [
         {

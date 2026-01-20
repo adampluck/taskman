@@ -3,101 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="A task manager PWA with voice input support">
-    <meta name="theme-color" content="#4a90d9">
-    <title>Task Manager</title>
+    <meta name="description" content="Stop procrastinating. Get a task.">
+    <meta name="theme-color" content="#000000">
+    <title>Just Do It</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="apple-touch-icon" href="icons/icon-192.svg">
 </head>
 <body>
-    <div class="app-container">
-        <header class="app-header">
-            <h1>Task Manager</h1>
-        </header>
-
-        <main class="app-main">
-            <section class="task-form-section">
-                <form id="task-form" class="task-form">
-                    <div class="form-row">
-                        <div class="input-group input-with-voice">
-                            <input
-                                type="text"
-                                id="task-input"
-                                placeholder="Enter a task..."
-                                required
-                                autocomplete="off"
-                            >
-                            <button type="button" id="voice-btn" class="voice-btn" title="Voice input">
-                                <svg class="mic-icon" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
-                                    <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
-                                </svg>
-                                <span class="recording-indicator"></span>
-                            </button>
-                        </div>
+    <div class="app">
+        <!-- Main: Pick a Task -->
+        <main class="main">
+            <div id="prompt-view" class="view">
+                <p class="prompt-text">What should I do?</p>
+                <div class="filters">
+                    <div class="category-wheel" id="picker-category" data-value="shopping" data-index="2" data-focused="true" tabindex="0">
+                        <button type="button" class="wheel-item" data-category="work" data-offset="-2">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg>
+                            <span class="wheel-label">Work</span>
+                        </button>
+                        <button type="button" class="wheel-item" data-category="personal" data-offset="-1">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <span class="wheel-label">Personal</span>
+                        </button>
+                        <button type="button" class="wheel-item active" data-category="shopping" data-offset="0">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                            <span class="wheel-label">Shopping</span>
+                        </button>
+                        <button type="button" class="wheel-item" data-category="health" data-offset="1">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                            <span class="wheel-label">Health</span>
+                        </button>
+                        <button type="button" class="wheel-item" data-category="other" data-offset="2">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                            <span class="wheel-label">Other</span>
+                        </button>
                     </div>
-
-                    <div class="form-row form-row-split">
-                        <div class="input-group">
-                            <label for="category-select">Category</label>
-                            <select id="category-select">
-                                <option value="work">Work</option>
-                                <option value="personal">Personal</option>
-                                <option value="shopping">Shopping</option>
-                                <option value="health">Health</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-
-                        <div class="input-group">
-                            <label for="time-select">Time Estimate</label>
-                            <select id="time-select">
-                                <option value="15">Quick (15 min)</option>
-                                <option value="30">Short (30 min)</option>
-                                <option value="60">Medium (1 hour)</option>
-                                <option value="120">Long (2 hours)</option>
-                                <option value="240">Extended (4+ hours)</option>
-                            </select>
-                        </div>
+                    <div class="time-options-wrap" id="picker-time" data-value="0">
+                        <button type="button" class="time-chip selected" data-value="0">∞</button>
+                        <button type="button" class="time-chip" data-value="15">15m</button>
+                        <button type="button" class="time-chip" data-value="30">30m</button>
+                        <button type="button" class="time-chip" data-value="60">1h</button>
+                        <button type="button" class="time-chip" data-value="120">2h</button>
                     </div>
-
-                    <button type="submit" class="btn btn-primary">Add Task</button>
-                </form>
-            </section>
-
-            <section class="filter-section">
-                <div class="filter-group">
-                    <label>Filter by category:</label>
-                    <select id="filter-category">
-                        <option value="all">All Categories</option>
-                        <option value="work">Work</option>
-                        <option value="personal">Personal</option>
-                        <option value="shopping">Shopping</option>
-                        <option value="health">Health</option>
-                        <option value="other">Other</option>
-                    </select>
                 </div>
-            </section>
+                <button id="pick-btn" class="btn-pick">Pick a task</button>
+            </div>
 
-            <section class="task-list-section">
-                <div id="task-list" class="task-list">
-                    <!-- Tasks will be rendered here -->
+            <div id="task-view" class="view hidden">
+                <p class="label">Your task:</p>
+                <h1 id="task-title" class="task-title"></h1>
+                <div id="task-meta" class="task-meta"></div>
+                <div class="task-actions">
+                    <button id="done-btn" class="btn-done">Done</button>
+                    <button id="skip-btn" class="btn-skip">Skip</button>
                 </div>
-                <p id="empty-message" class="empty-message">No tasks yet. Add one above!</p>
-            </section>
+            </div>
+
+            <div id="empty-view" class="view hidden">
+                <p class="empty-text">No tasks match.<br>Add some first.</p>
+                <button id="show-add-btn" class="btn-secondary">Add a task</button>
+            </div>
         </main>
 
-        <div id="voice-status" class="voice-status hidden">
-            <div class="voice-status-content">
-                <div class="pulse-ring"></div>
-                <span>Listening...</span>
+        <!-- Floating buttons -->
+        <button id="manage-toggle" class="floating-btn manage-float" title="Manage tasks">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+        </button>
+        <button id="add-toggle" class="floating-btn add-float" title="Add task">+</button>
+
+        <div id="add-modal" class="modal hidden">
+            <div class="modal-content add-modal-content">
+                <button id="close-modal" class="modal-close">&times;</button>
+                <form id="task-form">
+                    <div class="add-category-wheel" id="add-category" data-value="shopping" data-index="2">
+                        <button type="button" class="wheel-item" data-category="work" data-offset="-2">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg>
+                            <span class="wheel-label">Work</span>
+                        </button>
+                        <button type="button" class="wheel-item" data-category="personal" data-offset="-1">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <span class="wheel-label">Personal</span>
+                        </button>
+                        <button type="button" class="wheel-item active" data-category="shopping" data-offset="0">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                            <span class="wheel-label">Shopping</span>
+                        </button>
+                        <button type="button" class="wheel-item" data-category="health" data-offset="1">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                            <span class="wheel-label">Health</span>
+                        </button>
+                        <button type="button" class="wheel-item" data-category="other" data-offset="2">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                            <span class="wheel-label">Other</span>
+                        </button>
+                    </div>
+                    <input
+                        type="text"
+                        id="task-input"
+                        class="task-input"
+                        placeholder="What needs doing?"
+                        required
+                        autocomplete="off"
+                    >
+                    <div class="time-options-wrap" id="add-time" data-value="30">
+                        <button type="button" class="time-chip" data-value="0">∞</button>
+                        <button type="button" class="time-chip" data-value="15">15m</button>
+                        <button type="button" class="time-chip selected" data-value="30">30m</button>
+                        <button type="button" class="time-chip" data-value="60">1h</button>
+                        <button type="button" class="time-chip" data-value="120">2h</button>
+                    </div>
+                    <button type="submit" class="btn-add">Add task</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Manage Tasks Modal -->
+        <div id="manage-modal" class="modal hidden">
+            <div class="manage-content">
+                <div class="manage-header">
+                    <h2>Your Tasks</h2>
+                    <button id="close-manage" class="modal-close">&times;</button>
+                </div>
+                <div class="manage-filter-row">
+                    <div class="manage-category-filter" id="manage-category-filter" data-value="all">
+                        <button type="button" class="filter-chip selected" data-value="all">All</button>
+                        <button type="button" class="filter-chip" data-value="work">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v3"/></svg>
+                        </button>
+                        <button type="button" class="filter-chip" data-value="personal">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        </button>
+                        <button type="button" class="filter-chip" data-value="shopping">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                        </button>
+                        <button type="button" class="filter-chip" data-value="health">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        </button>
+                        <button type="button" class="filter-chip" data-value="other">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+                        </button>
+                    </div>
+                    <div class="manage-status-filter" id="manage-status-filter" data-value="all">
+                        <button type="button" class="filter-chip selected" data-value="all">All</button>
+                        <button type="button" class="filter-chip" data-value="active">Active</button>
+                        <button type="button" class="filter-chip" data-value="completed">Done</button>
+                    </div>
+                </div>
+                <div id="manage-list" class="manage-list">
+                    <!-- Tasks rendered here -->
+                </div>
+                <p id="manage-empty" class="manage-empty hidden">No tasks yet.</p>
             </div>
         </div>
     </div>
 
+    <div id="toast" class="toast">Task added</div>
+
     <script src="js/storage.js"></script>
-    <script src="js/speech.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

@@ -1,11 +1,10 @@
-const CACHE_NAME = 'task-manager-v1';
+const CACHE_NAME = 'task-manager-v23';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
     '/css/styles.css',
     '/js/app.js',
     '/js/storage.js',
-    '/js/speech.js',
     '/manifest.json'
 ];
 
