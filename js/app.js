@@ -84,39 +84,427 @@ const App = (function() {
 
     // Audio context for UI sounds
     let audioCtx = null;
-    function playClick(type) {
+    let soundEnabled = true;
+
+    function initSound() {
+        const saved = localStorage.getItem('taskman-sound');
+        soundEnabled = saved !== 'off';
+        if (!soundEnabled) {
+            document.body.classList.add('sound-off');
+        }
+    }
+
+    function toggleSound() {
+        soundEnabled = !soundEnabled;
+        document.body.classList.toggle('sound-off', !soundEnabled);
+        localStorage.setItem('taskman-sound', soundEnabled ? 'on' : 'off');
+    }
+
+    function getAudioContext() {
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
+        return audioCtx;
+    }
 
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
+    function playSound(type) {
+        if (!soundEnabled) return;
 
-        if (type === 'scroll') {
-            oscillator.frequency.value = 800;
-            gainNode.gain.value = 0.03;
-            oscillator.type = 'sine';
-        } else if (type === 'select') {
-            oscillator.frequency.value = 1200;
-            gainNode.gain.value = 0.05;
-            oscillator.type = 'sine';
-        } else if (type === 'toggle') {
-            oscillator.frequency.value = 600;
-            gainNode.gain.value = 0.04;
-            oscillator.type = 'sine';
+        const ctx = getAudioContext();
+        const now = ctx.currentTime;
+
+        if (type === 'tick') {
+            // Soft tick for scrolling - very short noise burst
+            const bufferSize = ctx.sampleRate * 0.015; // 15ms
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3);
+            }
+            const noise = ctx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = 2000;
+            filter.Q.value = 1;
+
+            const gain = ctx.createGain();
+            gain.gain.value = 0.08;
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(ctx.destination);
+            noise.start(now);
+
+        } else if (type === 'click') {
+            // Soft click for buttons
+            const bufferSize = ctx.sampleRate * 0.025; // 25ms
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 4);
+            }
+            const noise = ctx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 1500;
+
+            const gain = ctx.createGain();
+            gain.gain.value = 0.12;
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(ctx.destination);
+            noise.start(now);
+
+        } else if (type === 'success') {
+            // Gentle two-tone chime for completion
+            [520, 780].forEach(function(freq, i) {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0, now + i * 0.08);
+                gain.gain.linearRampToValueAtTime(0.06, now + i * 0.08 + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.2);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now + i * 0.08);
+                osc.stop(now + i * 0.08 + 0.25);
+            });
+
+        } else if (type === 'open') {
+            // Soft pop for opening modals
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.exponentialRampToValueAtTime(500, now + 0.04);
+            gain.gain.setValueAtTime(0.08, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.1);
+
+        } else if (type === 'close') {
+            // Soft thud for closing
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+            gain.gain.setValueAtTime(0.06, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.08);
+
+        } else if (type === 'delete') {
+            // Soft low thump for delete
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.exponentialRampToValueAtTime(80, now + 0.08);
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.12);
         }
+    }
 
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-        oscillator.start(audioCtx.currentTime);
-        oscillator.stop(audioCtx.currentTime + 0.1);
+    // Legacy alias for existing code
+    function playClick(type) {
+        if (type === 'scroll') playSound('tick');
+        else if (type === 'select') playSound('success');
+        else if (type === 'toggle') playSound('tick');
+        else playSound('click');
     }
 
     function init() {
         bindEvents();
         registerServiceWorker();
         updatePickButton();
+        initTheme();
+        initSound();
+        initAuth();
+    }
+
+    // Auth Modal elements
+    const authModal = document.getElementById('auth-modal');
+    const authToggle = document.getElementById('auth-toggle');
+    const syncStatus = document.getElementById('sync-status');
+
+    function initAuth() {
+        // Initialize Supabase client
+        initSupabase();
+
+        // Initialize auth if Supabase is configured
+        if (isSupabaseConfigured()) {
+            Auth.init().then(function() {
+                if (Auth.isAuthenticated()) {
+                    document.body.classList.add('authenticated');
+                    SyncEngine.init();
+                    SyncEngine.processQueue();
+                    updateAuthUI();
+                }
+            });
+
+            // Listen for auth state changes
+            Auth.onAuthStateChange(handleAuthChange);
+
+            // Listen for sync status changes
+            SyncEngine.onStatusChange(updateSyncStatusUI);
+        }
+
+    }
+
+    function handleAuthChange(event, user) {
+        if (event === 'SIGNED_IN') {
+            document.body.classList.add('authenticated');
+
+            // Check for guest data to migrate
+            const guestTasks = TaskStorage.getUnsyncedTasks();
+            if (guestTasks.length > 0) {
+                showMigrationPrompt(guestTasks.length);
+            } else {
+                SyncEngine.init();
+                SyncEngine.fullSync();
+                closeAuthModal();
+            }
+
+            showToast('Signed in');
+            updateAuthUI();
+        } else if (event === 'SIGNED_OUT') {
+            document.body.classList.remove('authenticated');
+            TaskStorage.clearSyncData();
+            showToast('Signed out');
+            closeAuthModal();
+            updatePickButton();
+        }
+    }
+
+    function openAuthModal() {
+        authModal.classList.remove('hidden');
+        playSound('open');
+
+        if (Auth.isAuthenticated()) {
+            showAuthView('account');
+            updateAuthUI();
+        } else {
+            showAuthView('signin');
+        }
+    }
+
+    function closeAuthModal() {
+        authModal.classList.add('hidden');
+        playSound('close');
+    }
+
+    function showAuthView(view) {
+        const views = authModal.querySelectorAll('.auth-view');
+        views.forEach(function(v) {
+            v.classList.add('hidden');
+        });
+
+        const targetView = document.getElementById('auth-' + view);
+        if (targetView) {
+            targetView.classList.remove('hidden');
+        }
+    }
+
+    function showMigrationPrompt(count) {
+        document.getElementById('migrate-count').textContent = count;
+        showAuthView('migrate');
+    }
+
+    async function handleMagicLinkSubmit(e) {
+        e.preventDefault();
+        const email = document.getElementById('auth-email').value;
+
+        try {
+            await Auth.signInWithMagicLink(email);
+            document.getElementById('sent-email').textContent = email;
+            showAuthView('check-email');
+            showToast('Magic link sent');
+        } catch (error) {
+            console.error('Magic link error:', error);
+            showToast('Failed to send magic link');
+        }
+    }
+
+    async function handleSignOut() {
+        try {
+            await Auth.signOut();
+        } catch (error) {
+            console.error('Sign out error:', error);
+            showToast('Failed to sign out');
+        }
+    }
+
+    async function handleMigrate() {
+        showToast('Syncing tasks...');
+        try {
+            SyncEngine.init();
+            const result = await SyncEngine.migrateGuestData();
+            showToast(result.migrated + ' tasks synced');
+            closeAuthModal();
+            updatePickButton();
+        } catch (error) {
+            console.error('Migration error:', error);
+            showToast('Failed to sync tasks');
+        }
+    }
+
+    function handleSkipMigrate() {
+        SyncEngine.init();
+        SyncEngine.fullSync();
+        closeAuthModal();
+    }
+
+    function updateAuthUI() {
+        const user = Auth.getUser();
+        if (!user) return;
+
+        const emailEl = document.getElementById('account-email');
+        if (emailEl) {
+            emailEl.textContent = user.email;
+        }
+
+        const syncedCountEl = document.getElementById('tasks-synced');
+        if (syncedCountEl) {
+            const tasks = TaskStorage.getTasks();
+            const synced = tasks.filter(function(t) {
+                return t._remoteId;
+            }).length;
+            syncedCountEl.textContent = synced;
+        }
+
+        const lastSyncEl = document.getElementById('last-sync');
+        if (lastSyncEl) {
+            const lastSync = localStorage.getItem(Config.STORAGE_KEYS.LAST_SYNC);
+            if (lastSync) {
+                const date = new Date(lastSync);
+                lastSyncEl.textContent = formatRelativeTime(date);
+            } else {
+                lastSyncEl.textContent = 'Never';
+            }
+        }
+    }
+
+    function formatRelativeTime(date) {
+        const now = new Date();
+        const diff = now - date;
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+
+        if (minutes < 1) return 'Just now';
+        if (minutes < 60) return minutes + 'm ago';
+        if (hours < 24) return hours + 'h ago';
+        return days + 'd ago';
+    }
+
+    function updateSyncStatusUI(status) {
+        if (!syncStatus) return;
+
+        syncStatus.className = 'sync-status ' + status;
+        const text = syncStatus.querySelector('.sync-text');
+
+        switch (status) {
+            case 'syncing':
+                text.textContent = 'Syncing...';
+                syncStatus.classList.remove('hidden');
+                break;
+            case 'synced':
+                text.textContent = 'Synced';
+                setTimeout(function() {
+                    syncStatus.classList.add('hidden');
+                }, 2000);
+                break;
+            case 'offline':
+                text.textContent = 'Offline';
+                syncStatus.classList.remove('hidden');
+                break;
+            case 'error':
+                text.textContent = 'Sync failed';
+                syncStatus.classList.remove('hidden');
+                break;
+            case 'online':
+                syncStatus.classList.add('hidden');
+                break;
+        }
+    }
+
+    function initTheme() {
+        const savedTheme = localStorage.getItem('taskman-theme') || 'dark';
+        applyTheme(savedTheme);
+
+        // If rainbow mode, restore or generate colors
+        if (savedTheme === 'rainbow') {
+            const savedHue = localStorage.getItem('taskman-rainbow-hue');
+            if (savedHue) {
+                setRainbowHue(parseInt(savedHue, 10));
+            } else {
+                randomizeRainbow();
+            }
+        }
+    }
+
+    function applyTheme(theme) {
+        document.body.classList.remove('light-mode', 'rainbow-mode');
+        if (theme === 'light') {
+            document.body.classList.add('light-mode');
+        } else if (theme === 'rainbow') {
+            document.body.classList.add('rainbow-mode');
+        }
+    }
+
+    function toggleTheme() {
+        const currentTheme = getCurrentTheme();
+        let newTheme;
+
+        // Cycle: dark → light → rainbow → dark
+        if (currentTheme === 'dark') {
+            newTheme = 'light';
+        } else if (currentTheme === 'light') {
+            newTheme = 'rainbow';
+            randomizeRainbow();
+        } else {
+            newTheme = 'dark';
+        }
+
+        applyTheme(newTheme);
+        localStorage.setItem('taskman-theme', newTheme);
+        playSound('tick');
+    }
+
+    function getCurrentTheme() {
+        if (document.body.classList.contains('rainbow-mode')) return 'rainbow';
+        if (document.body.classList.contains('light-mode')) return 'light';
+        return 'dark';
+    }
+
+    function randomizeRainbow() {
+        // Generate random pastel hue (0-360)
+        const hue = Math.floor(Math.random() * 360);
+        setRainbowHue(hue);
+
+        // Randomize pattern offset
+        const offset = Math.floor(Math.random() * 100);
+        document.body.style.setProperty('--pattern-offset', offset);
+    }
+
+    function setRainbowHue(hue) {
+        document.body.style.setProperty('--rainbow-hue', hue);
+        localStorage.setItem('taskman-rainbow-hue', hue);
     }
 
     function updatePickButton() {
@@ -223,13 +611,24 @@ const App = (function() {
         );
 
         // Keyboard navigation for main screen
-        let focusArea = 'category'; // 'category', 'time', 'button'
+        // Areas: 'header', 'category', 'time', 'button', 'footer'
+        let focusArea = 'category';
+        let headerFocus = 0; // 0=auth, 1=theme, 2=sound
+        let footerFocus = 0; // 0=manage, 1=add
         const timeChips = Array.from(pickerTime.querySelectorAll('.time-chip'));
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const soundToggleBtn = document.getElementById('sound-toggle');
 
         function updateFocusIndicators() {
+            // Clear all focus states
             pickerCategory.dataset.focused = focusArea === 'category';
             pickerTime.dataset.focused = focusArea === 'time';
             pickBtn.classList.toggle('focused', focusArea === 'button');
+            authToggle.classList.toggle('focused', focusArea === 'header' && headerFocus === 0);
+            themeToggleBtn.classList.toggle('focused', focusArea === 'header' && headerFocus === 1);
+            soundToggleBtn.classList.toggle('focused', focusArea === 'header' && headerFocus === 2);
+            manageToggle.classList.toggle('focused', focusArea === 'footer' && footerFocus === 0);
+            addToggle.classList.toggle('focused', focusArea === 'footer' && footerFocus === 1);
         }
 
         function getSelectedTimeIndex() {
@@ -260,6 +659,31 @@ const App = (function() {
             focusArea = 'button';
             updateFocusIndicators();
         });
+        authToggle.addEventListener('mouseenter', function() {
+            focusArea = 'header';
+            headerFocus = 0;
+            updateFocusIndicators();
+        });
+        themeToggleBtn.addEventListener('mouseenter', function() {
+            focusArea = 'header';
+            headerFocus = 1;
+            updateFocusIndicators();
+        });
+        soundToggleBtn.addEventListener('mouseenter', function() {
+            focusArea = 'header';
+            headerFocus = 2;
+            updateFocusIndicators();
+        });
+        manageToggle.addEventListener('mouseenter', function() {
+            focusArea = 'footer';
+            footerFocus = 0;
+            updateFocusIndicators();
+        });
+        addToggle.addEventListener('mouseenter', function() {
+            focusArea = 'footer';
+            footerFocus = 1;
+            updateFocusIndicators();
+        });
 
         document.addEventListener('keydown', function(e) {
             // Only handle when prompt view is visible
@@ -269,20 +693,30 @@ const App = (function() {
 
             if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                if (focusArea === 'time') {
-                    focusArea = 'category';
+                if (focusArea === 'footer') {
+                    focusArea = 'button';
                 } else if (focusArea === 'button') {
                     focusArea = 'time';
+                } else if (focusArea === 'time') {
+                    focusArea = 'category';
+                } else if (focusArea === 'category') {
+                    focusArea = 'header';
                 }
                 updateFocusIndicators();
+                playSound('tick');
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                if (focusArea === 'category') {
+                if (focusArea === 'header') {
+                    focusArea = 'category';
+                } else if (focusArea === 'category') {
                     focusArea = 'time';
                 } else if (focusArea === 'time') {
                     focusArea = 'button';
+                } else if (focusArea === 'button') {
+                    focusArea = 'footer';
                 }
                 updateFocusIndicators();
+                playSound('tick');
             } else if (e.key === 'ArrowLeft') {
                 e.preventDefault();
                 if (focusArea === 'category') {
@@ -293,6 +727,14 @@ const App = (function() {
                     const idx = getSelectedTimeIndex();
                     selectTimeChip(idx - 1);
                     playClick('scroll');
+                } else if (focusArea === 'header') {
+                    headerFocus = headerFocus > 0 ? headerFocus - 1 : 2;
+                    updateFocusIndicators();
+                    playSound('tick');
+                } else if (focusArea === 'footer') {
+                    footerFocus = footerFocus === 0 ? 1 : 0;
+                    updateFocusIndicators();
+                    playSound('tick');
                 }
             } else if (e.key === 'ArrowRight') {
                 e.preventDefault();
@@ -304,15 +746,82 @@ const App = (function() {
                     const idx = getSelectedTimeIndex();
                     selectTimeChip(idx + 1);
                     playClick('scroll');
+                } else if (focusArea === 'header') {
+                    headerFocus = headerFocus < 2 ? headerFocus + 1 : 0;
+                    updateFocusIndicators();
+                    playSound('tick');
+                } else if (focusArea === 'footer') {
+                    footerFocus = footerFocus === 0 ? 1 : 0;
+                    updateFocusIndicators();
+                    playSound('tick');
                 }
-            } else if (e.key === 'Enter') {
+            } else if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                if (focusArea === 'button') {
+                if (focusArea === 'button' && !pickBtn.disabled) {
                     playClick('select');
                     pickBtn.click();
+                } else if (focusArea === 'header') {
+                    if (headerFocus === 0) authToggle.click();
+                    else if (headerFocus === 1) themeToggleBtn.click();
+                    else soundToggleBtn.click();
+                } else if (focusArea === 'footer') {
+                    if (footerFocus === 0) manageToggle.click();
+                    else addToggle.click();
                 }
             }
         });
+
+        // Task view keyboard navigation
+        let taskViewFocus = 0; // 0=start/done, 1=skip, 2=reset (when visible)
+        const taskViewButtons = function() {
+            const btns = [];
+            if (!startBtn.classList.contains('hidden')) btns.push(startBtn);
+            if (!doneBtn.classList.contains('hidden')) btns.push(doneBtn);
+            if (!skipBtn.classList.contains('hidden')) btns.push(skipBtn);
+            if (!resetBtn.classList.contains('hidden')) btns.push(resetBtn);
+            return btns;
+        };
+
+        function updateTaskViewFocus() {
+            const btns = taskViewButtons();
+            btns.forEach(function(btn, i) {
+                btn.classList.toggle('focused', i === taskViewFocus);
+            });
+        }
+
+        document.addEventListener('keydown', function(e) {
+            // Only handle when task view is visible
+            if (taskView.classList.contains('hidden')) return;
+
+            const btns = taskViewButtons();
+            if (btns.length === 0) return;
+
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                taskViewFocus = (taskViewFocus - 1 + btns.length) % btns.length;
+                updateTaskViewFocus();
+                playSound('tick');
+            } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                taskViewFocus = (taskViewFocus + 1) % btns.length;
+                updateTaskViewFocus();
+                playSound('tick');
+            } else if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (btns[taskViewFocus]) {
+                    btns[taskViewFocus].click();
+                }
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                closeTask();
+            }
+        });
+
+        // Make task view focus functions available globally within IIFE
+        window._taskViewFocusReset = function() {
+            taskViewFocus = 0;
+            setTimeout(updateTaskViewFocus, 10);
+        };
 
         // Add modal - category wheel
         const addWheelItems = addCategory.querySelectorAll('.wheel-item');
@@ -384,6 +893,7 @@ const App = (function() {
         const addBtn = taskForm.querySelector('.btn-add');
 
         function updateAddFocusIndicators() {
+            closeModal.classList.toggle('focused', addFocusArea === 'close');
             addCategory.dataset.focused = addFocusArea === 'category';
             taskInput.classList.toggle('focused', addFocusArea === 'input');
             addTime.dataset.focused = addFocusArea === 'time';
@@ -402,6 +912,11 @@ const App = (function() {
         }
 
         // Hover to focus (add modal)
+        closeModal.addEventListener('mouseenter', function() {
+            addFocusArea = 'close';
+            taskInput.blur();
+            updateAddFocusIndicators();
+        });
         addCategory.addEventListener('mouseenter', function() {
             addFocusArea = 'category';
             taskInput.blur();
@@ -457,12 +972,30 @@ const App = (function() {
         manageList.addEventListener('click', handleManageAction);
         document.getElementById('delete-all-btn').addEventListener('click', deleteAllCompleted);
 
+        // Theme toggle
+        document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+        // Sound toggle
+        document.getElementById('sound-toggle').addEventListener('click', toggleSound);
+
+        // Auth toggle and events
+        document.getElementById('auth-toggle').addEventListener('click', openAuthModal);
+        document.getElementById('close-auth').addEventListener('click', closeAuthModal);
+        document.getElementById('magic-link-form').addEventListener('submit', handleMagicLinkSubmit);
+        document.getElementById('sign-out').addEventListener('click', handleSignOut);
+        document.getElementById('auth-back').addEventListener('click', function() {
+            showAuthView('signin');
+        });
+        document.getElementById('migrate-yes').addEventListener('click', handleMigrate);
+        document.getElementById('migrate-no').addEventListener('click', handleSkipMigrate);
+
         // Keyboard handler for modals
         document.addEventListener('keydown', function(e) {
             // Escape closes modals
             if (e.key === 'Escape') {
                 if (!addModal.classList.contains('hidden')) closeAddModal();
                 if (!manageModal.classList.contains('hidden')) closeManageModal();
+                if (!authModal.classList.contains('hidden')) closeAuthModal();
                 return;
             }
 
@@ -475,7 +1008,10 @@ const App = (function() {
 
                 if (e.key === 'ArrowUp') {
                     e.preventDefault();
-                    if (addFocusArea === 'input') {
+                    if (addFocusArea === 'category') {
+                        addFocusArea = 'close';
+                        taskInput.blur();
+                    } else if (addFocusArea === 'input') {
                         addFocusArea = 'category';
                         taskInput.blur();
                     } else if (addFocusArea === 'time') {
@@ -485,9 +1021,12 @@ const App = (function() {
                         addFocusArea = 'time';
                     }
                     updateAddFocusIndicators();
+                    playSound('tick');
                 } else if (e.key === 'ArrowDown') {
                     e.preventDefault();
-                    if (addFocusArea === 'category') {
+                    if (addFocusArea === 'close') {
+                        addFocusArea = 'category';
+                    } else if (addFocusArea === 'category') {
                         addFocusArea = 'input';
                         taskInput.focus();
                     } else if (addFocusArea === 'input') {
@@ -497,6 +1036,7 @@ const App = (function() {
                         addFocusArea = 'button';
                     }
                     updateAddFocusIndicators();
+                    playSound('tick');
                 } else if (e.key === 'ArrowLeft') {
                     if (addFocusArea === 'category') {
                         e.preventDefault();
@@ -521,21 +1061,90 @@ const App = (function() {
                         selectAddTimeChip(idx + 1);
                         playClick('scroll');
                     }
-                } else if (e.key === 'Enter') {
-                    if (addFocusArea === 'button') {
+                } else if (e.key === 'Enter' || e.key === ' ') {
+                    if (addFocusArea === 'close') {
+                        e.preventDefault();
+                        closeModal.click();
+                    } else if (addFocusArea === 'button') {
+                        e.preventDefault();
                         playClick('select');
+                        taskForm.querySelector('.btn-add').click();
+                    } else if (addFocusArea === 'input' && e.key === 'Enter') {
+                        // Let Enter submit when in input
+                    } else if (e.key === ' ' && addFocusArea !== 'input') {
+                        e.preventDefault();
                     }
-                    // Let form submit naturally for button or input
                 }
                 return;
             }
 
             // Manage modal keyboard navigation
             if (!manageModal.classList.contains('hidden')) {
-                // Basic navigation - close on escape handled above
+                const categoryChips = Array.from(manageCategoryFilter.querySelectorAll('.filter-chip'));
+                const statusChips = Array.from(manageStatusFilter.querySelectorAll('.filter-chip'));
+                const deleteAllBtn = document.getElementById('delete-all-btn');
+
+                // Track manage modal focus area: 'close', 'category', 'status'
+                if (!window._manageFocusArea) window._manageFocusArea = 'category';
+
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (window._manageFocusArea === 'category') {
+                        window._manageFocusArea = 'close';
+                        closeManage.classList.add('focused');
+                    } else if (window._manageFocusArea === 'status') {
+                        window._manageFocusArea = 'category';
+                        closeManage.classList.remove('focused');
+                    }
+                    playSound('tick');
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (window._manageFocusArea === 'close') {
+                        window._manageFocusArea = 'category';
+                        closeManage.classList.remove('focused');
+                    } else if (window._manageFocusArea === 'category') {
+                        window._manageFocusArea = 'status';
+                    }
+                    playSound('tick');
+                } else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    if (window._manageFocusArea === 'category') {
+                        const currentCat = categoryChips.findIndex(c => c.classList.contains('selected'));
+                        const newCat = (currentCat - 1 + categoryChips.length) % categoryChips.length;
+                        categoryChips[newCat].click();
+                    } else if (window._manageFocusArea === 'status') {
+                        const currentStatus = statusChips.findIndex(c => c.classList.contains('selected'));
+                        const newStatus = (currentStatus - 1 + statusChips.length) % statusChips.length;
+                        statusChips[newStatus].click();
+                    }
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    if (window._manageFocusArea === 'category') {
+                        const currentCat = categoryChips.findIndex(c => c.classList.contains('selected'));
+                        const newCat = (currentCat + 1) % categoryChips.length;
+                        categoryChips[newCat].click();
+                    } else if (window._manageFocusArea === 'status') {
+                        const currentStatus = statusChips.findIndex(c => c.classList.contains('selected'));
+                        const newStatus = (currentStatus + 1) % statusChips.length;
+                        statusChips[newStatus].click();
+                    }
+                } else if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (window._manageFocusArea === 'close') {
+                        closeManage.click();
+                    }
+                }
                 return;
             }
         });
+
+        // Reset manage modal focus when opening
+        const originalOpenManageModal = openManageModal;
+        openManageModal = function() {
+            window._manageFocusArea = 'category';
+            closeManage.classList.remove('focused');
+            originalOpenManageModal();
+        };
     }
 
     function registerServiceWorker() {
@@ -599,17 +1208,25 @@ const App = (function() {
 
         taskTitle.textContent = currentTask.title;
 
+        playSound('click');
         showView(taskView);
+
+        // Reset keyboard focus for task view
+        if (window._taskViewFocusReset) {
+            window._taskViewFocusReset();
+        }
     }
 
     function skipTask() {
         stopTimer();
+        playSound('tick');
         pickTask();
     }
 
     function closeTask() {
         stopTimer();
         currentTask = null;
+        playSound('close');
         showView(promptView);
     }
 
@@ -625,6 +1242,11 @@ const App = (function() {
     }
 
     function celebrate() {
+        // Change rainbow colors on task completion
+        if (getCurrentTheme() === 'rainbow') {
+            randomizeRainbow();
+        }
+
         // Create burst effect
         const burst = document.createElement('div');
         burst.className = 'celebration-burst';
@@ -675,6 +1297,8 @@ const App = (function() {
         taskTimer.classList.remove('hidden');
         taskTimer.classList.add('running');
 
+        playSound('click');
+
         timerInterval = setInterval(function() {
             updateTimerDisplay();
         }, 1000);
@@ -699,6 +1323,8 @@ const App = (function() {
         updateTimerDisplay();
         taskTimer.classList.remove('warning', 'overtime');
         taskTimer.classList.add('running');
+
+        playSound('click');
 
         // Restart the timer
         timerInterval = setInterval(function() {
@@ -775,11 +1401,13 @@ const App = (function() {
         addTime.dataset.focused = 'false';
         const addBtnEl = taskForm.querySelector('.btn-add');
         if (addBtnEl) addBtnEl.classList.remove('focused');
+        playSound('open');
     }
 
     function closeAddModal() {
         addModal.classList.add('hidden');
         taskForm.reset();
+        playSound('close');
         // If we were on empty view, go back to prompt view since we may have added tasks
         if (!emptyView.classList.contains('hidden')) {
             showView(promptView);
@@ -802,6 +1430,7 @@ const App = (function() {
 
         // Show toast
         showToast('Task added');
+        playSound('success');
 
         // Update pick button state
         updatePickButton();
@@ -820,10 +1449,12 @@ const App = (function() {
     function openManageModal() {
         manageModal.classList.remove('hidden');
         renderManageList();
+        playSound('open');
     }
 
     function closeManageModal() {
         manageModal.classList.add('hidden');
+        playSound('close');
     }
 
     function renderManageList() {
@@ -878,6 +1509,7 @@ const App = (function() {
         completedIds.forEach(function(id) {
             TaskStorage.deleteTask(id);
         });
+        playSound('delete');
         renderManageList();
         updatePickButton();
     }
@@ -956,6 +1588,7 @@ const App = (function() {
 
     function deleteTaskById(taskId) {
         TaskStorage.deleteTask(taskId);
+        playSound('delete');
         renderManageList();
         updatePickButton();
     }

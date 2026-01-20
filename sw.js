@@ -1,10 +1,14 @@
-const CACHE_NAME = 'task-manager-v34';
+const CACHE_NAME = 'task-manager-v52';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
     '/css/styles.css',
     '/js/app.js',
     '/js/storage.js',
+    '/js/config.js',
+    '/js/supabase.js',
+    '/js/auth.js',
+    '/js/sync.js',
     '/manifest.json'
 ];
 
@@ -46,6 +50,12 @@ self.addEventListener('activate', function(event) {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', function(event) {
+    // Skip caching for Supabase API requests
+    if (event.request.url.includes('supabase.co')) {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request)
             .then(function(cachedResponse) {
