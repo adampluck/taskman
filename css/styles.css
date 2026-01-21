@@ -1404,6 +1404,7 @@ body.rainbow-mode .modal-close.focused {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
+    flex-shrink: 0;
 }
 
 .manage-header h2 {
@@ -1422,6 +1423,7 @@ body.rainbow-mode .modal-close.focused {
     flex-direction: column;
     gap: 12px;
     margin-bottom: 16px;
+    flex-shrink: 0;
 }
 
 .manage-category-filter,
@@ -1485,6 +1487,7 @@ body.rainbow-mode .manage-status-filter[data-focused="true"] {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    min-height: 200px;
 }
 
 .manage-empty {
@@ -1578,6 +1581,49 @@ body.rainbow-mode .manage-status-filter[data-focused="true"] {
 .manage-item-btn svg {
     width: 14px;
     height: 14px;
+}
+
+.manage-item.focused {
+    outline: 2px solid #666;
+    outline-offset: 2px;
+}
+
+.manage-item-btn.focused {
+    border-color: #fff;
+    color: #fff;
+}
+
+.manage-item-btn.focused.delete {
+    border-color: #dc2626;
+    color: #dc2626;
+}
+
+body.light-mode .manage-item.focused {
+    outline-color: #888;
+}
+
+body.light-mode .manage-item-btn.focused {
+    border-color: #111;
+    color: #111;
+}
+
+body.light-mode .manage-item-btn.focused.delete {
+    border-color: #dc2626;
+    color: #dc2626;
+}
+
+body.rainbow-mode .manage-item.focused {
+    outline-color: var(--rainbow-accent);
+}
+
+body.rainbow-mode .manage-item-btn.focused {
+    border-color: var(--rainbow-fg);
+    color: var(--rainbow-fg);
+}
+
+body.rainbow-mode .manage-item-btn.focused.delete {
+    border-color: #dc2626;
+    color: #dc2626;
 }
 
 /* Edit Input */

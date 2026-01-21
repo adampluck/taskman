@@ -1144,15 +1144,37 @@ const App = (function() {
             if (!manageModal.classList.contains('hidden')) {
                 const categoryChips = Array.from(manageCategoryFilter.querySelectorAll('.filter-chip'));
                 const statusChips = Array.from(manageStatusFilter.querySelectorAll('.filter-chip'));
-                const deleteAllBtn = document.getElementById('delete-all-btn');
+                const taskItems = Array.from(manageList.querySelectorAll('.manage-item'));
 
-                // Track manage modal focus area: 'close', 'category', 'status'
+                // Track manage modal focus area: 'close', 'category', 'status', 'list'
                 if (!window._manageFocusArea) window._manageFocusArea = 'category';
+                if (window._manageTaskIndex === undefined) window._manageTaskIndex = 0;
+                if (!window._manageTaskBtn) window._manageTaskBtn = 'edit';
+
+                function clearTaskFocus() {
+                    taskItems.forEach(function(item) {
+                        item.classList.remove('focused');
+                        item.querySelectorAll('.manage-item-btn').forEach(function(btn) {
+                            btn.classList.remove('focused');
+                        });
+                    });
+                }
 
                 function updateManageFocusIndicators() {
                     closeManage.classList.toggle('focused', window._manageFocusArea === 'close');
                     manageCategoryFilter.dataset.focused = window._manageFocusArea === 'category';
                     manageStatusFilter.dataset.focused = window._manageFocusArea === 'status';
+
+                    clearTaskFocus();
+                    if (window._manageFocusArea === 'list' && taskItems.length > 0) {
+                        var idx = Math.min(window._manageTaskIndex, taskItems.length - 1);
+                        window._manageTaskIndex = idx;
+                        var item = taskItems[idx];
+                        item.classList.add('focused');
+                        var btn = item.querySelector('.manage-item-btn.' + window._manageTaskBtn);
+                        if (btn) btn.classList.add('focused');
+                        item.scrollIntoView({ block: 'nearest' });
+                    }
                 }
 
                 if (e.key === 'ArrowUp') {
@@ -1161,6 +1183,12 @@ const App = (function() {
                         window._manageFocusArea = 'close';
                     } else if (window._manageFocusArea === 'status') {
                         window._manageFocusArea = 'category';
+                    } else if (window._manageFocusArea === 'list') {
+                        if (window._manageTaskIndex > 0) {
+                            window._manageTaskIndex--;
+                        } else {
+                            window._manageFocusArea = 'status';
+                        }
                     }
                     updateManageFocusIndicators();
                     playSound('tick');
@@ -1170,6 +1198,15 @@ const App = (function() {
                         window._manageFocusArea = 'category';
                     } else if (window._manageFocusArea === 'category') {
                         window._manageFocusArea = 'status';
+                    } else if (window._manageFocusArea === 'status') {
+                        if (taskItems.length > 0) {
+                            window._manageFocusArea = 'list';
+                            window._manageTaskIndex = 0;
+                        }
+                    } else if (window._manageFocusArea === 'list') {
+                        if (window._manageTaskIndex < taskItems.length - 1) {
+                            window._manageTaskIndex++;
+                        }
                     }
                     updateManageFocusIndicators();
                     playSound('tick');
@@ -1183,6 +1220,10 @@ const App = (function() {
                         const currentStatus = statusChips.findIndex(c => c.classList.contains('selected'));
                         const newStatus = (currentStatus - 1 + statusChips.length) % statusChips.length;
                         statusChips[newStatus].click();
+                    } else if (window._manageFocusArea === 'list') {
+                        window._manageTaskBtn = 'edit';
+                        updateManageFocusIndicators();
+                        playSound('tick');
                     }
                 } else if (e.key === 'ArrowRight') {
                     e.preventDefault();
@@ -1194,11 +1235,23 @@ const App = (function() {
                         const currentStatus = statusChips.findIndex(c => c.classList.contains('selected'));
                         const newStatus = (currentStatus + 1) % statusChips.length;
                         statusChips[newStatus].click();
+                    } else if (window._manageFocusArea === 'list') {
+                        window._manageTaskBtn = 'delete';
+                        updateManageFocusIndicators();
+                        playSound('tick');
                     }
                 } else if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     if (window._manageFocusArea === 'close') {
                         closeManage.click();
+                    } else if (window._manageFocusArea === 'list' && taskItems.length > 0) {
+                        var idx = Math.min(window._manageTaskIndex, taskItems.length - 1);
+                        var item = taskItems[idx];
+                        var btn = item.querySelector('.manage-item-btn.' + window._manageTaskBtn);
+                        if (btn) {
+                            btn.click();
+                            playSound('click');
+                        }
                     }
                 }
                 return;
@@ -1393,6 +1446,8 @@ const App = (function() {
         const originalOpenManageModal = openManageModal;
         openManageModal = function() {
             window._manageFocusArea = 'category';
+            window._manageTaskIndex = 0;
+            window._manageTaskBtn = 'edit';
             closeManage.classList.remove('focused');
             originalOpenManageModal();
         };
@@ -1456,6 +1511,19 @@ const App = (function() {
                     wrap.dataset.focused = 'false';
                 }
             });
+        });
+
+        // Clear manage list keyboard focus when hovering over items
+        manageList.addEventListener('mouseover', function(e) {
+            var item = e.target.closest('.manage-item');
+            if (item) {
+                manageList.querySelectorAll('.manage-item').forEach(function(i) {
+                    i.classList.remove('focused');
+                    i.querySelectorAll('.manage-item-btn').forEach(function(btn) {
+                        btn.classList.remove('focused');
+                    });
+                });
+            }
         });
     }
 
