@@ -1766,7 +1766,13 @@ const App = (function() {
     }
 
     function showSignupPrompt(count) {
+        // Re-check conditions after delay
+        if (typeof Auth !== 'undefined' && Auth.isAuthenticated()) return;
+        if (localStorage.getItem('taskman-signup-dismissed')) return;
+
         const prompt = document.getElementById('signup-prompt');
+        if (!prompt || !prompt.classList.contains('hidden')) return;
+
         const countEl = document.getElementById('completed-count');
         if (countEl) countEl.textContent = count;
         prompt.classList.remove('hidden');
