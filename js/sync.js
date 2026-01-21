@@ -34,13 +34,19 @@ const SyncEngine = (function() {
             return q.taskId !== task.id;
         });
 
-        filtered.push({
+        const queueItem = {
             action: action,
             taskId: task.id,
             timestamp: new Date().toISOString(),
             retries: 0
-        });
+        };
 
+        // Save remoteId for delete actions since task will be removed locally
+        if (action === 'delete' && task._remoteId) {
+            queueItem.remoteId = task._remoteId;
+        }
+
+        filtered.push(queueItem);
         saveQueue(filtered);
         scheduleSync();
     }
