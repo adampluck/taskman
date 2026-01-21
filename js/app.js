@@ -1411,6 +1411,16 @@ const App = (function() {
             });
         }, { passive: true });
 
+        // Clear any lingering focus/selection states when arrow keys are used
+        document.addEventListener('keydown', function(e) {
+            if (e.key.startsWith('Arrow')) {
+                // Blur any focused element to remove native focus outline
+                if (document.activeElement && document.activeElement !== document.body) {
+                    document.activeElement.blur();
+                }
+            }
+        }, { passive: true });
+
         // Clear focus when hovering over corner buttons
         [authToggle, themeToggleBtn, soundToggleBtn, manageToggle, addToggle].forEach(function(btn) {
             if (btn) {
