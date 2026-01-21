@@ -834,7 +834,9 @@ const App = (function() {
                 playSound('tick');
             } else if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
+                e.stopPropagation();
                 if (btns[taskViewFocus]) {
+                    playClick('select');
                     btns[taskViewFocus].click();
                 }
             } else if (e.key === 'Escape') {
@@ -846,7 +848,7 @@ const App = (function() {
         // Make task view focus functions available globally within IIFE
         window._taskViewFocusReset = function() {
             taskViewFocus = 0;
-            setTimeout(updateTaskViewFocus, 10);
+            updateTaskViewFocus();
         };
 
         // Add modal - category wheel
