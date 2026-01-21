@@ -1429,6 +1429,24 @@ body.rainbow-mode .modal-close.focused {
     display: flex;
     gap: 8px;
     justify-content: center;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background 0.15s;
+}
+
+.manage-category-filter[data-focused="true"],
+.manage-status-filter[data-focused="true"] {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+body.light-mode .manage-category-filter[data-focused="true"],
+body.light-mode .manage-status-filter[data-focused="true"] {
+    background: rgba(0, 0, 0, 0.06);
+}
+
+body.rainbow-mode .manage-category-filter[data-focused="true"],
+body.rainbow-mode .manage-status-filter[data-focused="true"] {
+    background: hsla(var(--rainbow-hue), 40%, 50%, 0.1);
 }
 
 .filter-chip {
@@ -1703,6 +1721,15 @@ body.rainbow-mode .modal-close.focused {
     body.rainbow-mode .category-wheel[data-focused="true"],
     body.rainbow-mode .add-category-wheel[data-focused="true"],
     body.rainbow-mode .time-options-wrap[data-focused="true"] {
+        background: transparent !important;
+    }
+
+    .manage-category-filter[data-focused="true"],
+    .manage-status-filter[data-focused="true"],
+    body.light-mode .manage-category-filter[data-focused="true"],
+    body.light-mode .manage-status-filter[data-focused="true"],
+    body.rainbow-mode .manage-category-filter[data-focused="true"],
+    body.rainbow-mode .manage-status-filter[data-focused="true"] {
         background: transparent !important;
     }
 }

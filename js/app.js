@@ -1149,24 +1149,29 @@ const App = (function() {
                 // Track manage modal focus area: 'close', 'category', 'status'
                 if (!window._manageFocusArea) window._manageFocusArea = 'category';
 
+                function updateManageFocusIndicators() {
+                    closeManage.classList.toggle('focused', window._manageFocusArea === 'close');
+                    manageCategoryFilter.dataset.focused = window._manageFocusArea === 'category';
+                    manageStatusFilter.dataset.focused = window._manageFocusArea === 'status';
+                }
+
                 if (e.key === 'ArrowUp') {
                     e.preventDefault();
                     if (window._manageFocusArea === 'category') {
                         window._manageFocusArea = 'close';
-                        closeManage.classList.add('focused');
                     } else if (window._manageFocusArea === 'status') {
                         window._manageFocusArea = 'category';
-                        closeManage.classList.remove('focused');
                     }
+                    updateManageFocusIndicators();
                     playSound('tick');
                 } else if (e.key === 'ArrowDown') {
                     e.preventDefault();
                     if (window._manageFocusArea === 'close') {
                         window._manageFocusArea = 'category';
-                        closeManage.classList.remove('focused');
                     } else if (window._manageFocusArea === 'category') {
                         window._manageFocusArea = 'status';
                     }
+                    updateManageFocusIndicators();
                     playSound('tick');
                 } else if (e.key === 'ArrowLeft') {
                     e.preventDefault();
