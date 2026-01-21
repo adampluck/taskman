@@ -1419,6 +1419,26 @@ const App = (function() {
                 });
             }
         });
+
+        // Clear data-focused on category wheels when hovering
+        document.querySelectorAll('.wheel-item').forEach(function(item) {
+            item.addEventListener('mouseenter', function() {
+                var wheel = this.closest('.category-wheel, .add-category-wheel');
+                if (wheel) {
+                    wheel.dataset.focused = 'false';
+                }
+            });
+        });
+
+        // Clear data-focused on time options when hovering
+        document.querySelectorAll('.time-chip').forEach(function(chip) {
+            chip.addEventListener('mouseenter', function() {
+                var wrap = this.closest('.time-options-wrap');
+                if (wrap) {
+                    wrap.dataset.focused = 'false';
+                }
+            });
+        });
     }
 
     function registerServiceWorker() {
