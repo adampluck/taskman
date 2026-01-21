@@ -127,6 +127,13 @@
             </svg>
         </button>
         <button id="add-toggle" class="floating-btn add-float" title="Add task">+</button>
+        <div id="add-hint" class="add-hint hidden">
+            <span class="add-hint-label">Add a task</span>
+            <svg class="add-hint-arrow" viewBox="0 0 60 80" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <path d="M30 5 Q10 20 15 45 Q20 65 45 70"/>
+                <path d="M35 62 L45 70 L38 58"/>
+            </svg>
+        </div>
 
         <div id="add-modal" class="modal hidden">
             <div class="modal-content add-modal-content">
@@ -223,7 +230,7 @@
             <button id="close-signup-prompt" class="modal-close">&times;</button>
             <div class="signup-prompt-icon">&#9888;</div>
             <h2>Don't lose your progress</h2>
-            <p>You've completed <strong id="completed-count">3</strong> tasks! But they're only saved on this device.</p>
+            <p>You've <span id="signup-prompt-verb">completed</span> <strong id="signup-prompt-count">3</strong> tasks! But they're only saved on this device.</p>
             <p class="signup-prompt-warning">If you clear your browser data or switch devices, your tasks will be gone forever.</p>
             <div class="signup-prompt-benefits">
                 <div class="benefit">

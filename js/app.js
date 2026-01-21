@@ -616,7 +616,8 @@ const App = (function() {
         const category = pickerCategory.dataset.value;
         const maxTime = parseInt(pickerTime.dataset.value, 10);
 
-        let tasks = TaskStorage.getTasks().filter(t => !t.completed);
+        const allTasks = TaskStorage.getTasks();
+        let tasks = allTasks.filter(t => !t.completed);
 
         if (category !== 'all') {
             tasks = tasks.filter(t => t.category === category);
@@ -627,6 +628,16 @@ const App = (function() {
         }
 
         pickBtn.disabled = tasks.length === 0;
+
+        // Show/hide add hint based on total task count
+        const addHint = document.getElementById('add-hint');
+        if (addHint) {
+            if (allTasks.length === 0 && !promptView.classList.contains('hidden')) {
+                addHint.classList.remove('hidden');
+            } else {
+                addHint.classList.add('hidden');
+            }
+        }
     }
 
     function bindEvents() {
@@ -1287,7 +1298,7 @@ const App = (function() {
                 // Track manage modal focus area: 'close', 'category', 'status', 'list'
                 if (!window._manageFocusArea) window._manageFocusArea = 'category';
                 if (window._manageTaskIndex === undefined) window._manageTaskIndex = 0;
-                if (!window._manageTaskBtn) window._manageTaskBtn = 'edit';
+                if (!window._manageTaskBtn) window._manageTaskBtn = 'open';
 
                 function clearTaskFocus() {
                     taskItems.forEach(function(item) {
@@ -1359,7 +1370,10 @@ const App = (function() {
                         const newStatus = (currentStatus - 1 + statusChips.length) % statusChips.length;
                         statusChips[newStatus].click();
                     } else if (window._manageFocusArea === 'list') {
-                        window._manageTaskBtn = 'edit';
+                        // Cycle left: delete → edit → open
+                        if (window._manageTaskBtn === 'delete') window._manageTaskBtn = 'edit';
+                        else if (window._manageTaskBtn === 'edit') window._manageTaskBtn = 'open';
+                        else window._manageTaskBtn = 'delete';
                         updateManageFocusIndicators();
                         playSound('tick');
                     }
@@ -1374,7 +1388,10 @@ const App = (function() {
                         const newStatus = (currentStatus + 1) % statusChips.length;
                         statusChips[newStatus].click();
                     } else if (window._manageFocusArea === 'list') {
-                        window._manageTaskBtn = 'delete';
+                        // Cycle right: open → edit → delete
+                        if (window._manageTaskBtn === 'open') window._manageTaskBtn = 'edit';
+                        else if (window._manageTaskBtn === 'edit') window._manageTaskBtn = 'delete';
+                        else window._manageTaskBtn = 'open';
                         updateManageFocusIndicators();
                         playSound('tick');
                     }
@@ -1631,7 +1648,7 @@ const App = (function() {
         openManageModal = function() {
             window._manageFocusArea = 'category';
             window._manageTaskIndex = 0;
-            window._manageTaskBtn = 'edit';
+            window._manageTaskBtn = 'open';
             closeManage.classList.remove('focused');
             originalOpenManageModal();
         };
@@ -1722,6 +1739,17 @@ const App = (function() {
         taskView.classList.add('hidden');
         emptyView.classList.add('hidden');
         view.classList.remove('hidden');
+
+        // Update add hint visibility
+        const addHint = document.getElementById('add-hint');
+        if (addHint) {
+            const allTasks = TaskStorage.getTasks();
+            if (view === promptView && allTasks.length === 0) {
+                addHint.classList.remove('hidden');
+            } else {
+                addHint.classList.add('hidden');
+            }
+        }
     }
 
     function pickTask() {
@@ -1781,6 +1809,63 @@ const App = (function() {
         }
     }
 
+    function openTaskById(taskId) {
+        // Stop any running timer
+        stopTimer();
+
+        // Find the task
+        const task = TaskStorage.getTasks().find(function(t) { return t.id === taskId; });
+        if (!task) return;
+
+        currentTask = task;
+
+        // Close manage modal
+        closeManageModal();
+
+        // Show category icon
+        taskCategoryIcon.innerHTML = categoryIcons[currentTask.category] || categoryIcons.other;
+
+        // Show time limit if applicable
+        if (currentTask.timeEstimate > 0) {
+            taskTimeLimit.textContent = formatTime(currentTask.timeEstimate);
+            timerLimit = currentTask.timeEstimate * 60;
+            startBtn.classList.remove('hidden');
+        } else {
+            taskTimeLimit.textContent = '';
+            timerLimit = 0;
+            startBtn.classList.add('hidden');
+        }
+
+        // Reset timer display
+        timerStartTime = null;
+        timerNotificationSent = false;
+        timerDisplay.textContent = '00:00';
+        taskTimer.classList.add('hidden');
+        taskTimer.classList.remove('running', 'warning', 'overtime');
+
+        taskTitle.textContent = currentTask.title;
+
+        // Show/hide buttons based on completion status
+        if (currentTask.completed) {
+            doneBtn.classList.add('hidden');
+            skipBtn.classList.add('hidden');
+            resetBtn.classList.remove('hidden');
+            startBtn.classList.add('hidden');
+        } else {
+            doneBtn.classList.remove('hidden');
+            skipBtn.classList.remove('hidden');
+            resetBtn.classList.add('hidden');
+        }
+
+        playSound('click');
+        showView(taskView);
+
+        // Reset keyboard focus for task view
+        if (window._taskViewFocusReset) {
+            window._taskViewFocusReset();
+        }
+    }
+
     function skipTask() {
         stopTimer();
         playSound('tick');
@@ -1810,8 +1895,8 @@ const App = (function() {
         // Don't show if already authenticated
         if (typeof Auth !== 'undefined' && Auth.isAuthenticated()) return;
 
-        // Don't show if already dismissed
-        if (localStorage.getItem('taskman-signup-dismissed')) return;
+        // Don't show if this specific prompt type was dismissed
+        if (localStorage.getItem('taskman-signup-dismissed-completed')) return;
 
         // Count completed tasks
         const tasks = TaskStorage.getTasks();
@@ -1820,20 +1905,26 @@ const App = (function() {
         // Show prompt after 3 completions
         if (completedCount >= 3) {
             setTimeout(function() {
-                showSignupPrompt(completedCount);
+                showSignupPrompt(completedCount, 'completed');
             }, 1500); // Delay to let celebration finish
         }
     }
 
-    function showSignupPrompt(count) {
+    function showSignupPrompt(count, type) {
         // Re-check conditions after delay
         if (typeof Auth !== 'undefined' && Auth.isAuthenticated()) return;
-        if (localStorage.getItem('taskman-signup-dismissed')) return;
+        var dismissKey = 'taskman-signup-dismissed-' + type;
+        if (localStorage.getItem(dismissKey)) return;
 
         const prompt = document.getElementById('signup-prompt');
         if (!prompt || !prompt.classList.contains('hidden')) return;
 
-        const countEl = document.getElementById('completed-count');
+        // Store current type for dismissal
+        prompt.dataset.promptType = type;
+
+        const verbEl = document.getElementById('signup-prompt-verb');
+        const countEl = document.getElementById('signup-prompt-count');
+        if (verbEl) verbEl.textContent = type === 'added' ? 'added' : 'completed';
         if (countEl) countEl.textContent = count;
         prompt.classList.remove('hidden');
         window._signupFocusArea = 'yes'; // Reset focus to Yes button
@@ -1846,7 +1937,9 @@ const App = (function() {
     }
 
     function dismissSignupPrompt() {
-        localStorage.setItem('taskman-signup-dismissed', 'true');
+        var prompt = document.getElementById('signup-prompt');
+        var type = prompt.dataset.promptType || 'completed';
+        localStorage.setItem('taskman-signup-dismissed-' + type, 'true');
         closeSignupPrompt();
     }
 
@@ -2043,6 +2136,16 @@ const App = (function() {
 
         // Update pick button state
         updatePickButton();
+
+        // Show signup prompt after 5 tasks added (if not logged in)
+        if (typeof Auth === 'undefined' || !Auth.isAuthenticated()) {
+            const totalTasks = TaskStorage.getTasks().length;
+            if (totalTasks >= 5) {
+                setTimeout(function() {
+                    showSignupPrompt(totalTasks, 'added');
+                }, 500);
+            }
+        }
     }
 
     function showToast(message) {
@@ -2131,6 +2234,11 @@ const App = (function() {
                     <div class="manage-item-meta">${task.category} · ${formatTime(task.timeEstimate)}</div>
                 </div>
                 <div class="manage-item-actions">
+                    <button class="manage-item-btn open" title="Open">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                    </button>
                     <button class="manage-item-btn edit" title="Edit">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -2155,7 +2263,9 @@ const App = (function() {
         const item = btn.closest('.manage-item');
         const taskId = item.dataset.id;
 
-        if (btn.classList.contains('edit')) {
+        if (btn.classList.contains('open')) {
+            openTaskById(taskId);
+        } else if (btn.classList.contains('edit')) {
             startEdit(item, taskId);
         } else if (btn.classList.contains('delete')) {
             deleteTaskById(taskId);

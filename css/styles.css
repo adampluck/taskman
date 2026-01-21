@@ -964,6 +964,7 @@ body.rainbow-mode .btn-add.focused {
     color: #fff;
     outline: 2px solid #666;
     outline-offset: 2px;
+    border-radius: 4px;
 }
 
 .task-category-icon {
@@ -1259,6 +1260,53 @@ body.rainbow-mode .btn-reset.focused {
 .manage-float svg {
     width: 22px;
     height: 22px;
+}
+
+/* Add task hint arrow */
+.add-hint {
+    position: fixed;
+    bottom: 100px;
+    right: 50px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: hint-bob 2s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 5;
+}
+
+.add-hint-label {
+    font-size: 0.875rem;
+    color: #888;
+    margin-bottom: 4px;
+    white-space: nowrap;
+}
+
+.add-hint-arrow {
+    width: 50px;
+    height: 65px;
+    color: #888;
+}
+
+@keyframes hint-bob {
+    0%, 100% {
+        transform: translateY(0);
+        opacity: 0.8;
+    }
+    50% {
+        transform: translateY(6px);
+        opacity: 1;
+    }
+}
+
+body.light-mode .add-hint-label,
+body.light-mode .add-hint-arrow {
+    color: #999;
+}
+
+body.rainbow-mode .add-hint-label,
+body.rainbow-mode .add-hint-arrow {
+    color: var(--rainbow-muted);
 }
 
 /* Modal */
