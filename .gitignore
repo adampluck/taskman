@@ -1,1 +1,2 @@
 # Supabase anon key is safe to expose - RLS protects data
+.DS_Store
