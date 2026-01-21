@@ -1410,6 +1410,15 @@ const App = (function() {
                 el.classList.remove('focused');
             });
         }, { passive: true });
+
+        // Clear focus when hovering over corner buttons
+        [authToggle, themeToggleBtn, soundToggleBtn, manageToggle, addToggle].forEach(function(btn) {
+            if (btn) {
+                btn.addEventListener('mouseenter', function() {
+                    this.classList.remove('focused');
+                });
+            }
+        });
     }
 
     function registerServiceWorker() {
