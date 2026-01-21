@@ -371,6 +371,18 @@ body.light-mode .manage-item-btn.delete:hover {
     color: #dc2626;
 }
 
+body.light-mode .manage-list {
+    scrollbar-color: #ccc transparent;
+}
+
+body.light-mode .manage-list::-webkit-scrollbar-thumb {
+    background: #ccc;
+}
+
+body.light-mode .manage-list::-webkit-scrollbar-thumb:hover {
+    background: #bbb;
+}
+
 body.light-mode .manage-empty {
     color: #888;
 }
@@ -702,6 +714,18 @@ body.rainbow-mode .manage-item-btn:hover {
 body.rainbow-mode .manage-item-btn.delete:hover {
     border-color: #dc2626;
     color: #dc2626;
+}
+
+body.rainbow-mode .manage-list {
+    scrollbar-color: var(--rainbow-border) transparent;
+}
+
+body.rainbow-mode .manage-list::-webkit-scrollbar-thumb {
+    background: var(--rainbow-border);
+}
+
+body.rainbow-mode .manage-list::-webkit-scrollbar-thumb:hover {
+    background: var(--rainbow-accent);
 }
 
 body.rainbow-mode .manage-empty {
@@ -1488,6 +1512,25 @@ body.rainbow-mode .manage-status-filter[data-focused="true"] {
     flex-direction: column;
     gap: 8px;
     min-height: 200px;
+    scrollbar-width: thin;
+    scrollbar-color: #444 transparent;
+}
+
+.manage-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.manage-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.manage-list::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+}
+
+.manage-list::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
 
 .manage-empty {
