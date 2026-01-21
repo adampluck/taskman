@@ -1830,6 +1830,10 @@ body.light-mode .sync-status.syncing .sync-icon::before {
     font-family: monospace;
 }
 
+#otp-verify-form {
+    margin-bottom: 16px;
+}
+
 .auth-modal-content form {
     width: 100%;
 }
