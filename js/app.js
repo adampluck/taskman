@@ -1374,6 +1374,10 @@ const App = (function() {
                         }
                     } else if (!accountView.classList.contains('hidden')) {
                         if (window._authFocusArea === 'button') {
+                            window._authFocusArea = 'category';
+                        } else if (window._authFocusArea === 'category') {
+                            window._authFocusArea = 'period';
+                        } else if (window._authFocusArea === 'period') {
                             window._authFocusArea = 'close';
                         }
                     } else if (!migrateView.classList.contains('hidden')) {
@@ -1407,6 +1411,10 @@ const App = (function() {
                         }
                     } else if (!accountView.classList.contains('hidden')) {
                         if (window._authFocusArea === 'close') {
+                            window._authFocusArea = 'period';
+                        } else if (window._authFocusArea === 'period') {
+                            window._authFocusArea = 'category';
+                        } else if (window._authFocusArea === 'category') {
                             window._authFocusArea = 'button';
                         }
                     } else if (!migrateView.classList.contains('hidden')) {
@@ -1418,6 +1426,36 @@ const App = (function() {
                     }
                     updateAuthFocusIndicators();
                     playSound('tick');
+                } else if (e.key === 'ArrowLeft') {
+                    if (!accountView.classList.contains('hidden')) {
+                        e.preventDefault();
+                        if (window._authFocusArea === 'period') {
+                            var periodTabs = Array.from(document.querySelectorAll('.period-tab'));
+                            var currentIdx = periodTabs.findIndex(function(t) { return t.classList.contains('selected'); });
+                            var newIdx = (currentIdx - 1 + periodTabs.length) % periodTabs.length;
+                            periodTabs[newIdx].click();
+                        } else if (window._authFocusArea === 'category') {
+                            var categoryChips = Array.from(document.querySelectorAll('#analytics-category .analytics-chip'));
+                            var currentIdx = categoryChips.findIndex(function(c) { return c.classList.contains('selected'); });
+                            var newIdx = (currentIdx - 1 + categoryChips.length) % categoryChips.length;
+                            categoryChips[newIdx].click();
+                        }
+                    }
+                } else if (e.key === 'ArrowRight') {
+                    if (!accountView.classList.contains('hidden')) {
+                        e.preventDefault();
+                        if (window._authFocusArea === 'period') {
+                            var periodTabs = Array.from(document.querySelectorAll('.period-tab'));
+                            var currentIdx = periodTabs.findIndex(function(t) { return t.classList.contains('selected'); });
+                            var newIdx = (currentIdx + 1) % periodTabs.length;
+                            periodTabs[newIdx].click();
+                        } else if (window._authFocusArea === 'category') {
+                            var categoryChips = Array.from(document.querySelectorAll('#analytics-category .analytics-chip'));
+                            var currentIdx = categoryChips.findIndex(function(c) { return c.classList.contains('selected'); });
+                            var newIdx = (currentIdx + 1) % categoryChips.length;
+                            categoryChips[newIdx].click();
+                        }
+                    }
                 } else if (e.key === 'Enter' || e.key === ' ') {
                     if (window._authFocusArea === 'close') {
                         e.preventDefault();
@@ -1473,6 +1511,8 @@ const App = (function() {
             const signOutBtn = document.getElementById('sign-out');
             const migrateYes = document.getElementById('migrate-yes');
             const migrateNo = document.getElementById('migrate-no');
+            const analyticsPeriodTabs = document.querySelector('.analytics-period-tabs');
+            const analyticsCategoryFilter = document.getElementById('analytics-category');
 
             // Clear all
             closeAuth.classList.remove('focused');
@@ -1484,6 +1524,8 @@ const App = (function() {
             if (signOutBtn) signOutBtn.classList.remove('focused');
             if (migrateYes) migrateYes.classList.remove('focused');
             if (migrateNo) migrateNo.classList.remove('focused');
+            if (analyticsPeriodTabs) analyticsPeriodTabs.dataset.focused = 'false';
+            if (analyticsCategoryFilter) analyticsCategoryFilter.dataset.focused = 'false';
 
             if (window._authFocusArea === 'close') {
                 closeAuth.classList.add('focused');
@@ -1517,6 +1559,10 @@ const App = (function() {
                 } else if (migrateNo) {
                     migrateNo.classList.add('focused');
                 }
+            } else if (window._authFocusArea === 'period') {
+                if (analyticsPeriodTabs) analyticsPeriodTabs.dataset.focused = 'true';
+            } else if (window._authFocusArea === 'category') {
+                if (analyticsCategoryFilter) analyticsCategoryFilter.dataset.focused = 'true';
             }
         }
 
