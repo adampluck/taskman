@@ -1585,7 +1585,7 @@ body.rainbow-mode .manage-status-filter[data-focused="true"] {
 
 .manage-item.focused {
     outline: 2px solid #666;
-    outline-offset: 2px;
+    outline-offset: -2px;
 }
 
 .manage-item-btn.focused {
