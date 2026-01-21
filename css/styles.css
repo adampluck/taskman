@@ -2059,6 +2059,98 @@ body.light-mode .btn-passkey:hover {
     color: #666;
 }
 
+/* Analytics Section */
+.analytics-section {
+    margin: 20px 0;
+    padding-top: 16px;
+    border-top: 1px solid #333;
+}
+
+.analytics-period-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.period-tab {
+    padding: 6px 14px;
+    font-size: 0.75rem;
+    background: transparent;
+    border: 1px solid #333;
+    border-radius: 16px;
+    color: #666;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.period-tab:hover {
+    border-color: #555;
+    color: #888;
+}
+
+.period-tab.selected {
+    border-color: #fff;
+    color: #fff;
+    background: #222;
+}
+
+.analytics-stat {
+    text-align: center;
+    margin-bottom: 16px;
+}
+
+.analytics-value {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.analytics-label {
+    font-size: 0.75rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.analytics-category-filter {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.analytics-chip {
+    padding: 6px 10px;
+    font-size: 0.6875rem;
+    background: transparent;
+    border: 1px solid #333;
+    border-radius: 14px;
+    color: #666;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.analytics-chip svg {
+    width: 14px;
+    height: 14px;
+}
+
+.analytics-chip:hover {
+    border-color: #555;
+    color: #888;
+}
+
+.analytics-chip.selected {
+    border-color: #fff;
+    color: #fff;
+    background: #222;
+}
+
 .auth-actions {
     display: flex;
     flex-direction: column;
@@ -2238,6 +2330,46 @@ body.light-mode .stat-label {
     color: #888;
 }
 
+body.light-mode .analytics-section {
+    border-top-color: #ddd;
+}
+
+body.light-mode .period-tab {
+    border-color: #ddd;
+    color: #888;
+}
+
+body.light-mode .period-tab:hover {
+    border-color: #bbb;
+    color: #666;
+}
+
+body.light-mode .period-tab.selected {
+    border-color: #111;
+    color: #111;
+    background: #f5f5f5;
+}
+
+body.light-mode .analytics-label {
+    color: #888;
+}
+
+body.light-mode .analytics-chip {
+    border-color: #ddd;
+    color: #888;
+}
+
+body.light-mode .analytics-chip:hover {
+    border-color: #bbb;
+    color: #666;
+}
+
+body.light-mode .analytics-chip.selected {
+    border-color: #111;
+    color: #111;
+    background: #f5f5f5;
+}
+
 /* Rainbow mode auth styles */
 body.rainbow-mode .auth-modal-content h2 {
     color: var(--rainbow-fg);
@@ -2269,6 +2401,50 @@ body.rainbow-mode .btn-secondary {
 body.rainbow-mode .auth-divider::before,
 body.rainbow-mode .auth-divider::after {
     background: var(--rainbow-border);
+}
+
+body.rainbow-mode .analytics-section {
+    border-top-color: var(--rainbow-border);
+}
+
+body.rainbow-mode .period-tab {
+    border-color: var(--rainbow-border);
+    color: var(--rainbow-muted);
+}
+
+body.rainbow-mode .period-tab:hover {
+    border-color: var(--rainbow-accent);
+    color: var(--rainbow-fg);
+}
+
+body.rainbow-mode .period-tab.selected {
+    border-color: var(--rainbow-fg);
+    color: var(--rainbow-fg);
+    background: var(--rainbow-surface);
+}
+
+body.rainbow-mode .analytics-value {
+    color: var(--rainbow-fg);
+}
+
+body.rainbow-mode .analytics-label {
+    color: var(--rainbow-muted);
+}
+
+body.rainbow-mode .analytics-chip {
+    border-color: var(--rainbow-border);
+    color: var(--rainbow-muted);
+}
+
+body.rainbow-mode .analytics-chip:hover {
+    border-color: var(--rainbow-accent);
+    color: var(--rainbow-fg);
+}
+
+body.rainbow-mode .analytics-chip.selected {
+    border-color: var(--rainbow-fg);
+    color: var(--rainbow-fg);
+    background: var(--rainbow-surface);
 }
 
 body.rainbow-mode .sync-status {

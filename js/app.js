@@ -58,6 +58,8 @@ const App = (function() {
     let manageCategoryValue = 'all';
     let manageStatusValue = 'all';
     let addFocusArea = 'category'; // For add modal keyboard nav
+    let analyticsPeriod = 'daily';
+    let analyticsCategory = 'all';
 
     // Swipe detection helper
     function addSwipeListener(element, onSwipeLeft, onSwipeRight) {
@@ -92,6 +94,33 @@ const App = (function() {
         if (!soundEnabled) {
             document.body.classList.add('sound-off');
         }
+    }
+
+    function initAnalytics() {
+        // Period tabs
+        var periodTabs = document.querySelectorAll('.period-tab');
+        periodTabs.forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                periodTabs.forEach(function(t) { t.classList.remove('selected'); });
+                tab.classList.add('selected');
+                analyticsPeriod = tab.dataset.period;
+                updateAnalyticsUI();
+                playSound('tick');
+            });
+        });
+
+        // Category filter
+        var categoryChips = document.querySelectorAll('#analytics-category .analytics-chip');
+        categoryChips.forEach(function(chip) {
+            chip.addEventListener('click', function() {
+                categoryChips.forEach(function(c) { c.classList.remove('selected'); });
+                chip.classList.add('selected');
+                analyticsCategory = chip.dataset.value;
+                document.getElementById('analytics-category').dataset.value = chip.dataset.value;
+                updateAnalyticsUI();
+                playSound('tick');
+            });
+        });
     }
 
     function toggleSound() {
@@ -235,6 +264,7 @@ const App = (function() {
         initTheme();
         initSound();
         initAuth();
+        initAnalytics();
     }
 
     // Auth Modal elements
@@ -395,6 +425,51 @@ const App = (function() {
         closeAuthModal();
     }
 
+    function calculateAnalytics(period, category) {
+        var tasks = TaskStorage.getTasks();
+        var now = new Date();
+
+        // Filter by completion status
+        var completedTasks = tasks.filter(function(t) {
+            return t.completed && t.completedAt;
+        });
+
+        // Filter by time period
+        completedTasks = completedTasks.filter(function(t) {
+            var completedDate = new Date(t.completedAt);
+
+            if (period === 'daily') {
+                return completedDate.toDateString() === now.toDateString();
+            } else if (period === 'weekly') {
+                var weekAgo = new Date(now);
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                return completedDate >= weekAgo;
+            } else if (period === 'monthly') {
+                var monthAgo = new Date(now);
+                monthAgo.setDate(monthAgo.getDate() - 30);
+                return completedDate >= monthAgo;
+            }
+            return true;
+        });
+
+        // Filter by category
+        if (category !== 'all') {
+            completedTasks = completedTasks.filter(function(t) {
+                return t.category === category;
+            });
+        }
+
+        return { completed: completedTasks.length };
+    }
+
+    function updateAnalyticsUI() {
+        var stats = calculateAnalytics(analyticsPeriod, analyticsCategory);
+        var completedEl = document.getElementById('analytics-completed');
+        if (completedEl) {
+            completedEl.textContent = stats.completed;
+        }
+    }
+
     function updateAuthUI() {
         const user = Auth.getUser();
         if (!user) return;
@@ -423,6 +498,9 @@ const App = (function() {
                 lastSyncEl.textContent = 'Never';
             }
         }
+
+        // Update analytics
+        updateAnalyticsUI();
     }
 
     function formatRelativeTime(date) {
