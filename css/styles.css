@@ -83,6 +83,10 @@ body {
     border-radius: 4px;
 }
 
+.top-btn.focused:hover {
+    outline: none;
+}
+
 .top-btn svg {
     width: 100%;
     height: 100%;
@@ -1198,6 +1202,10 @@ body.rainbow-mode .btn-reset.focused {
     outline-offset: 4px;
 }
 
+.floating-btn.focused:hover {
+    outline: none;
+}
+
 .add-float {
     right: 32px;
     font-size: 2rem;
@@ -1709,6 +1717,10 @@ body.rainbow-mode .modal-close.focused {
 .auth-float.focused {
     outline: 2px solid #666;
     outline-offset: 2px;
+}
+
+.auth-float.focused:hover {
+    outline: none;
 }
 
 body.light-mode .auth-float.focused {
