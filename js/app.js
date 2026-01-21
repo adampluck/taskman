@@ -835,9 +835,21 @@ const App = (function() {
             } else if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 e.stopPropagation();
-                if (btns[taskViewFocus]) {
+                // Find the button that actually has .focused class
+                let targetBtn = btns.find(function(btn) {
+                    return btn.classList.contains('focused');
+                });
+                // Fallback to index if no focused class found
+                if (!targetBtn && btns[taskViewFocus]) {
+                    targetBtn = btns[taskViewFocus];
+                }
+                // Final fallback to first button
+                if (!targetBtn && btns.length > 0) {
+                    targetBtn = btns[0];
+                }
+                if (targetBtn) {
                     playClick('select');
-                    btns[taskViewFocus].click();
+                    targetBtn.click();
                 }
             } else if (e.key === 'Escape') {
                 e.preventDefault();
