@@ -1371,8 +1371,9 @@ const App = (function() {
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 const focused = document.querySelector('.focused');
-                if (focused && (focused.tagName === 'BUTTON' || focused.classList.contains('btn-add') || focused.classList.contains('btn-pick'))) {
+                if (focused && focused.tagName === 'BUTTON') {
                     e.preventDefault();
+                    playClick('select');
                     focused.click();
                 }
             }
