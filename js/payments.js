@@ -111,6 +111,7 @@ const Payments = (function() {
                 method: 'POST',
                 headers: {
                     'Authorization': 'Bearer ' + session.access_token,
+                    'apikey': Config.SUPABASE_ANON_KEY,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ origin: window.location.origin }),
