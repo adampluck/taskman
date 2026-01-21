@@ -2548,3 +2548,164 @@ body.rainbow-mode .sync-status {
     background: rgba(255, 255, 255, 0.9);
     color: var(--rainbow-muted);
 }
+
+/* Paywall Modal */
+.paywall-content {
+    text-align: center;
+    max-width: 340px;
+}
+
+.paywall-content h2 {
+    font-size: 1.5rem;
+    margin-bottom: 12px;
+    color: #fff;
+}
+
+.paywall-content p {
+    margin-bottom: 12px;
+    line-height: 1.5;
+    color: #aaa;
+}
+
+.paywall-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+}
+
+.paywall-features {
+    list-style: none;
+    margin: 24px 0;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.paywall-features li {
+    color: #ccc;
+    font-size: 0.9375rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.paywall-content .btn-add {
+    margin-bottom: 12px;
+}
+
+.paywall-note {
+    font-size: 0.8125rem;
+    color: #666 !important;
+    margin-top: 8px !important;
+}
+
+body.light-mode .paywall-content h2 {
+    color: #111;
+}
+
+body.light-mode .paywall-content p {
+    color: #666;
+}
+
+body.light-mode .paywall-features li {
+    color: #444;
+}
+
+body.rainbow-mode .paywall-content h2 {
+    color: var(--rainbow-fg);
+}
+
+body.rainbow-mode .paywall-content p {
+    color: var(--rainbow-muted);
+}
+
+body.rainbow-mode .paywall-features li {
+    color: var(--rainbow-fg);
+}
+
+/* Payment Section in Account View */
+.payment-section {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #333;
+}
+
+.tier-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.tier-label {
+    color: #888;
+    font-size: 0.9375rem;
+}
+
+.tier-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tier-badge.tier-free {
+    background: #333;
+    color: #aaa;
+}
+
+.tier-badge.tier-pro {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+}
+
+.tasks-remaining {
+    font-size: 0.875rem;
+    color: #666;
+    margin-bottom: 16px;
+}
+
+.btn-upgrade {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.9375rem;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.btn-upgrade:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.btn-upgrade:active {
+    transform: translateY(0);
+}
+
+body.light-mode .payment-section {
+    border-top-color: #ddd;
+}
+
+body.light-mode .tier-badge.tier-free {
+    background: #e5e5e5;
+    color: #666;
+}
+
+body.rainbow-mode .payment-section {
+    border-top-color: var(--rainbow-border);
+}
+
+body.rainbow-mode .tier-label {
+    color: var(--rainbow-muted);
+}
+
+body.rainbow-mode .tasks-remaining {
+    color: var(--rainbow-muted);
+}

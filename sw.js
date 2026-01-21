@@ -1,4 +1,4 @@
-const CACHE_NAME = 'task-manager-v99';
+const CACHE_NAME = 'task-manager-v101';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -9,6 +9,7 @@ const ASSETS_TO_CACHE = [
     '/js/supabase.js',
     '/js/auth.js',
     '/js/sync.js',
+    '/js/payments.js',
     '/manifest.json'
 ];
 

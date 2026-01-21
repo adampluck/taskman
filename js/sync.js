@@ -94,9 +94,24 @@ const SyncEngine = (function() {
 
                 try {
                     if (item.action === 'delete') {
-                        await deleteRemote(task || { id: item.taskId, _remoteId: item.remoteId });
+                        const taskToDelete = task || { id: item.taskId, _remoteId: item.remoteId };
+                        const hadRemoteId = !!taskToDelete._remoteId;
+                        await deleteRemote(taskToDelete);
+                        if (hadRemoteId) {
+                            Payments.decrementTaskCount();
+                        }
                     } else {
+                        // Check task limit for new tasks (no _remoteId yet)
+                        const isNewTask = !task._remoteId;
+                        if (isNewTask && !Payments.canSyncMoreTasks()) {
+                            notifyStatus('limit_reached');
+                            removeFromQueue(item.taskId);
+                            continue;
+                        }
                         await upsertRemote(task);
+                        if (isNewTask) {
+                            Payments.incrementTaskCount();
+                        }
                     }
                     removeFromQueue(item.taskId);
                 } catch (error) {
@@ -256,19 +271,27 @@ const SyncEngine = (function() {
             return !t._remoteId;
         });
 
-        if (guestTasks.length === 0) return { migrated: 0, total: 0 };
+        if (guestTasks.length === 0) return { migrated: 0, total: 0, limitReached: false };
 
         let migrated = 0;
+        let limitReached = false;
         for (let i = 0; i < guestTasks.length; i++) {
+            // Check task limit before migrating each task
+            if (!Payments.canSyncMoreTasks()) {
+                limitReached = true;
+                notifyStatus('limit_reached');
+                break;
+            }
             try {
                 await upsertRemote(guestTasks[i]);
+                Payments.incrementTaskCount();
                 migrated++;
             } catch (error) {
                 console.error('Failed to migrate task:', guestTasks[i].id, error);
             }
         }
 
-        return { migrated: migrated, total: guestTasks.length };
+        return { migrated: migrated, total: guestTasks.length, limitReached: limitReached };
     }
 
     async function fullSync() {

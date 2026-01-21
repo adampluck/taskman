@@ -284,7 +284,11 @@ const App = (function() {
                     document.body.classList.add('authenticated');
                     SyncEngine.init();
                     SyncEngine.processQueue();
-                    updateAuthUI();
+                    // Fetch payments status
+                    Payments.fetchStatus().then(function() {
+                        updateAuthUI();
+                        updatePaymentUI();
+                    });
                 }
             });
 
@@ -293,6 +297,17 @@ const App = (function() {
 
             // Listen for sync status changes
             SyncEngine.onStatusChange(updateSyncStatusUI);
+
+            // Listen for payment status changes
+            Payments.onStatusChange(updatePaymentUI);
+
+            // Handle payment redirect result
+            var paymentResult = Payments.handlePaymentResult();
+            if (paymentResult === 'success') {
+                showToast('Payment successful! Welcome to Pro');
+            } else if (paymentResult === 'cancelled') {
+                showToast('Payment cancelled');
+            }
         }
 
     }
@@ -301,24 +316,30 @@ const App = (function() {
         if (event === 'SIGNED_IN') {
             document.body.classList.add('authenticated');
 
-            // Check for guest data to migrate
-            const guestTasks = TaskStorage.getUnsyncedTasks();
-            if (guestTasks.length > 0) {
-                showMigrationPrompt(guestTasks.length);
-            } else {
-                SyncEngine.init();
-                SyncEngine.fullSync();
-                closeAuthModal();
-            }
+            // Fetch payments status first
+            Payments.fetchStatus().then(function() {
+                // Check for guest data to migrate
+                const guestTasks = TaskStorage.getUnsyncedTasks();
+                if (guestTasks.length > 0) {
+                    showMigrationPrompt(guestTasks.length);
+                } else {
+                    SyncEngine.init();
+                    SyncEngine.fullSync();
+                    closeAuthModal();
+                }
+
+                updateAuthUI();
+                updatePaymentUI();
+            });
 
             showToast('Signed in');
-            updateAuthUI();
         } else if (event === 'SIGNED_OUT') {
             document.body.classList.remove('authenticated');
             TaskStorage.clearSyncData();
             showToast('Signed out');
             closeAuthModal();
             updatePickButton();
+            updatePaymentUI();
         }
     }
 
@@ -545,6 +566,94 @@ const App = (function() {
             case 'online':
                 syncStatus.classList.add('hidden');
                 break;
+            case 'limit_reached':
+                text.textContent = 'Task limit reached';
+                syncStatus.classList.remove('hidden');
+                openPaywallModal();
+                break;
+        }
+    }
+
+    // Paywall modal functions
+    function openPaywallModal() {
+        var paywallModal = document.getElementById('paywall-modal');
+        if (!paywallModal) return;
+
+        // Update limit in modal text
+        var limit = Payments.getTaskLimit();
+        var limitEl = document.getElementById('paywall-limit');
+        if (limitEl && limit) {
+            limitEl.textContent = limit;
+        }
+
+        paywallModal.classList.remove('hidden');
+        playSound('open');
+    }
+
+    function closePaywallModal() {
+        var paywallModal = document.getElementById('paywall-modal');
+        if (paywallModal) {
+            paywallModal.classList.add('hidden');
+            playSound('close');
+        }
+    }
+
+    async function handleUpgrade() {
+        try {
+            showToast('Redirecting to checkout...');
+            await Payments.initiateCheckout();
+        } catch (error) {
+            console.error('Checkout error:', error);
+            showToast('Failed to start checkout');
+        }
+    }
+
+    function updatePaymentUI() {
+        var paymentSection = document.getElementById('payment-section');
+        var tierBadge = document.getElementById('tier-badge');
+        var tasksRemaining = document.getElementById('tasks-remaining');
+        var upgradeBtn = document.getElementById('upgrade-btn');
+
+        if (!paymentSection) return;
+
+        // Hide payment section if payments not enabled
+        if (!Payments.isPaymentsEnabled()) {
+            paymentSection.classList.add('hidden');
+            return;
+        }
+
+        paymentSection.classList.remove('hidden');
+
+        // Update tier badge
+        if (tierBadge) {
+            if (Payments.isProUser()) {
+                tierBadge.textContent = 'Pro';
+                tierBadge.className = 'tier-badge tier-pro';
+            } else {
+                tierBadge.textContent = 'Free';
+                tierBadge.className = 'tier-badge tier-free';
+            }
+        }
+
+        // Update remaining tasks text
+        if (tasksRemaining) {
+            var remaining = Payments.getRemainingTasks();
+            if (remaining !== null) {
+                tasksRemaining.textContent = remaining + ' of ' + Payments.getTaskLimit() + ' synced tasks remaining';
+                tasksRemaining.classList.remove('hidden');
+            } else {
+                tasksRemaining.textContent = 'Unlimited synced tasks';
+                tasksRemaining.classList.remove('hidden');
+            }
+        }
+
+        // Show/hide upgrade button
+        if (upgradeBtn) {
+            if (Payments.isProUser()) {
+                upgradeBtn.classList.add('hidden');
+            } else {
+                upgradeBtn.classList.remove('hidden');
+            }
         }
     }
 
@@ -1152,6 +1261,15 @@ const App = (function() {
             openAuthModal();
         });
 
+        // Paywall modal events
+        document.getElementById('close-paywall').addEventListener('click', closePaywallModal);
+        document.getElementById('paywall-later').addEventListener('click', closePaywallModal);
+        document.getElementById('paywall-upgrade').addEventListener('click', handleUpgrade);
+        var upgradeBtn = document.getElementById('upgrade-btn');
+        if (upgradeBtn) {
+            upgradeBtn.addEventListener('click', handleUpgrade);
+        }
+
         // Keyboard handler for modals
         document.addEventListener('keydown', function(e) {
             // Escape closes modals
@@ -1160,6 +1278,8 @@ const App = (function() {
                 if (!manageModal.classList.contains('hidden')) closeManageModal();
                 if (!authModal.classList.contains('hidden')) closeAuthModal();
                 if (!document.getElementById('signup-prompt').classList.contains('hidden')) dismissSignupPrompt();
+                var paywallModal = document.getElementById('paywall-modal');
+                if (paywallModal && !paywallModal.classList.contains('hidden')) closePaywallModal();
                 return;
             }
 
@@ -1895,32 +2015,37 @@ const App = (function() {
         // Don't show if already authenticated
         if (typeof Auth !== 'undefined' && Auth.isAuthenticated()) return;
 
-        // Don't show if this specific prompt type was dismissed
-        if (localStorage.getItem('taskman-signup-dismissed-completed')) return;
-
         // Count completed tasks
         const tasks = TaskStorage.getTasks();
         const completedCount = tasks.filter(function(t) { return t.completed; }).length;
 
-        // Show prompt after 3 completions
-        if (completedCount >= 3) {
+        // Check thresholds (highest first) - 10, then 3
+        var threshold = null;
+        if (completedCount >= 10 && !localStorage.getItem('taskman-signup-dismissed-completed-10')) {
+            threshold = 10;
+        } else if (completedCount >= 3 && !localStorage.getItem('taskman-signup-dismissed-completed-3')) {
+            threshold = 3;
+        }
+
+        if (threshold) {
             setTimeout(function() {
-                showSignupPrompt(completedCount, 'completed');
+                showSignupPrompt(completedCount, 'completed', threshold);
             }, 1500); // Delay to let celebration finish
         }
     }
 
-    function showSignupPrompt(count, type) {
+    function showSignupPrompt(count, type, threshold) {
         // Re-check conditions after delay
         if (typeof Auth !== 'undefined' && Auth.isAuthenticated()) return;
-        var dismissKey = 'taskman-signup-dismissed-' + type;
+        var dismissKey = 'taskman-signup-dismissed-' + type + '-' + threshold;
         if (localStorage.getItem(dismissKey)) return;
 
         const prompt = document.getElementById('signup-prompt');
         if (!prompt || !prompt.classList.contains('hidden')) return;
 
-        // Store current type for dismissal
+        // Store current type and threshold for dismissal
         prompt.dataset.promptType = type;
+        prompt.dataset.promptThreshold = threshold;
 
         const verbEl = document.getElementById('signup-prompt-verb');
         const countEl = document.getElementById('signup-prompt-count');
@@ -1939,7 +2064,8 @@ const App = (function() {
     function dismissSignupPrompt() {
         var prompt = document.getElementById('signup-prompt');
         var type = prompt.dataset.promptType || 'completed';
-        localStorage.setItem('taskman-signup-dismissed-' + type, 'true');
+        var threshold = prompt.dataset.promptThreshold || '3';
+        localStorage.setItem('taskman-signup-dismissed-' + type + '-' + threshold, 'true');
         closeSignupPrompt();
     }
 
@@ -2137,12 +2263,19 @@ const App = (function() {
         // Update pick button state
         updatePickButton();
 
-        // Show signup prompt after 5 tasks added (if not logged in)
+        // Show signup prompt after tasks added (if not logged in)
         if (typeof Auth === 'undefined' || !Auth.isAuthenticated()) {
             const totalTasks = TaskStorage.getTasks().length;
-            if (totalTasks >= 5) {
+            // Check thresholds (highest first) - 15, then 5
+            var threshold = null;
+            if (totalTasks >= 15 && !localStorage.getItem('taskman-signup-dismissed-added-15')) {
+                threshold = 15;
+            } else if (totalTasks >= 5 && !localStorage.getItem('taskman-signup-dismissed-added-5')) {
+                threshold = 5;
+            }
+            if (threshold) {
                 setTimeout(function() {
-                    showSignupPrompt(totalTasks, 'added');
+                    showSignupPrompt(totalTasks, 'added', threshold);
                 }, 500);
             }
         }
