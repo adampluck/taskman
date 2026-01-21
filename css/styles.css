@@ -2151,13 +2151,17 @@ body.light-mode .btn-passkey:hover {
     background: #222;
 }
 
-.analytics-period-tabs[data-focused="true"],
-.analytics-category-filter[data-focused="true"] {
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
+.analytics-period-tabs,
+.analytics-category-filter {
     padding: 8px;
     margin: -8px;
     margin-bottom: 8px;
+    border-radius: 8px;
+}
+
+.analytics-period-tabs[data-focused="true"],
+.analytics-category-filter[data-focused="true"] {
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .auth-actions {
