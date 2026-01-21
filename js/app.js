@@ -817,13 +817,16 @@ const App = (function() {
             return { btn: null, index: -1, btns: btns };
         }
 
-        function setTaskFocus(index) {
-            var btns = getVisibleTaskButtons();
-            // Clear all focus
+        function clearAllTaskFocus() {
             startBtn.classList.remove('focused');
             doneBtn.classList.remove('focused');
             skipBtn.classList.remove('focused');
             resetBtn.classList.remove('focused');
+        }
+
+        function setTaskFocus(index) {
+            var btns = getVisibleTaskButtons();
+            clearAllTaskFocus();
             // Set focus on target
             if (btns[index]) {
                 btns[index].classList.add('focused');
@@ -849,13 +852,14 @@ const App = (function() {
                 playSound('tick');
             } else if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                e.stopPropagation();
+                e.stopImmediatePropagation();
                 // Click the focused button, or first button if none focused
                 var targetBtn = state.btn || state.btns[0];
                 if (targetBtn) {
                     playClick('select');
                     targetBtn.click();
                 }
+                return;
             } else if (e.key === 'Escape') {
                 e.preventDefault();
                 closeTask();
@@ -1386,8 +1390,11 @@ const App = (function() {
         };
 
         // Global fallback: click any focused button/element on Enter
+        // (but not when task view is visible - that has its own handler)
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
+                // Skip if task view is handling this
+                if (!taskView.classList.contains('hidden')) return;
                 const focused = document.querySelector('.focused');
                 if (focused && focused.tagName === 'BUTTON') {
                     e.preventDefault();
