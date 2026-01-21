@@ -19,6 +19,7 @@ const App = (function() {
     const resetBtn = document.getElementById('reset-btn');
     const doneBtn = document.getElementById('done-btn');
     const skipBtn = document.getElementById('skip-btn');
+    const closeTaskBtn = document.getElementById('close-task');
 
     // Category icons SVG
     const categoryIcons = {
@@ -881,6 +882,7 @@ const App = (function() {
         // Task view keyboard navigation - simplified DOM-based approach
         function getVisibleTaskButtons() {
             var btns = [];
+            btns.push(closeTaskBtn); // Close button always first
             if (!startBtn.classList.contains('hidden')) btns.push(startBtn);
             if (!doneBtn.classList.contains('hidden')) btns.push(doneBtn);
             if (!skipBtn.classList.contains('hidden')) btns.push(skipBtn);
@@ -899,6 +901,7 @@ const App = (function() {
         }
 
         function clearAllTaskFocus() {
+            closeTaskBtn.classList.remove('focused');
             startBtn.classList.remove('focused');
             doneBtn.classList.remove('focused');
             skipBtn.classList.remove('focused');
@@ -917,6 +920,11 @@ const App = (function() {
         document.addEventListener('keydown', function(e) {
             // Only handle when task view is visible
             if (taskView.classList.contains('hidden')) return;
+            // Defer to modals when they're open
+            if (!authModal.classList.contains('hidden')) return;
+            if (!addModal.classList.contains('hidden')) return;
+            if (!manageModal.classList.contains('hidden')) return;
+            if (!document.getElementById('signup-prompt').classList.contains('hidden')) return;
 
             var state = getTaskFocusedButton();
             if (state.btns.length === 0) return;
@@ -947,9 +955,14 @@ const App = (function() {
             }
         });
 
-        // Reset focus to first button when task view opens
+        // Reset focus when task view opens - Start button on desktop, none on mobile
         window._taskViewFocusReset = function() {
-            setTaskFocus(0);
+            var isMobile = window.matchMedia('(hover: none)').matches;
+            if (isMobile) {
+                clearAllTaskFocus();
+            } else {
+                setTaskFocus(1); // Start button is index 1 (after close)
+            }
         };
 
         // Add modal - category wheel
@@ -1136,6 +1149,53 @@ const App = (function() {
                 if (!manageModal.classList.contains('hidden')) closeManageModal();
                 if (!authModal.classList.contains('hidden')) closeAuthModal();
                 if (!document.getElementById('signup-prompt').classList.contains('hidden')) dismissSignupPrompt();
+                return;
+            }
+
+            // Signup prompt keyboard navigation
+            var signupPrompt = document.getElementById('signup-prompt');
+            if (!signupPrompt.classList.contains('hidden')) {
+                var closeSignupBtn = document.getElementById('close-signup-prompt');
+                var yesBtn = document.getElementById('signup-prompt-yes');
+                var laterBtn = document.getElementById('signup-prompt-later');
+
+                if (!window._signupFocusArea) window._signupFocusArea = 'yes';
+
+                function updateSignupFocusIndicators() {
+                    closeSignupBtn.classList.toggle('focused', window._signupFocusArea === 'close');
+                    yesBtn.classList.toggle('focused', window._signupFocusArea === 'yes');
+                    laterBtn.classList.toggle('focused', window._signupFocusArea === 'later');
+                }
+
+                if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (window._signupFocusArea === 'yes') {
+                        window._signupFocusArea = 'close';
+                    } else if (window._signupFocusArea === 'later') {
+                        window._signupFocusArea = 'yes';
+                    }
+                    updateSignupFocusIndicators();
+                    playSound('tick');
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (window._signupFocusArea === 'close') {
+                        window._signupFocusArea = 'yes';
+                    } else if (window._signupFocusArea === 'yes') {
+                        window._signupFocusArea = 'later';
+                    }
+                    updateSignupFocusIndicators();
+                    playSound('tick');
+                } else if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    if (window._signupFocusArea === 'close') {
+                        dismissSignupPrompt();
+                    } else if (window._signupFocusArea === 'yes') {
+                        yesBtn.click();
+                    } else if (window._signupFocusArea === 'later') {
+                        laterBtn.click();
+                    }
+                    playClick('select');
+                }
                 return;
             }
 
@@ -1776,6 +1836,7 @@ const App = (function() {
         const countEl = document.getElementById('completed-count');
         if (countEl) countEl.textContent = count;
         prompt.classList.remove('hidden');
+        window._signupFocusArea = 'yes'; // Reset focus to Yes button
         playSound('open');
     }
 

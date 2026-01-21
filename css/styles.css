@@ -218,6 +218,11 @@ body.light-mode .task-close:hover {
     color: #111;
 }
 
+body.light-mode .task-close.focused {
+    color: #111;
+    outline-color: #888;
+}
+
 body.light-mode .task-category-icon svg {
     color: #999;
 }
@@ -550,6 +555,11 @@ body.rainbow-mode .task-close {
 
 body.rainbow-mode .task-close:hover {
     color: var(--rainbow-fg);
+}
+
+body.rainbow-mode .task-close.focused {
+    color: var(--rainbow-fg);
+    outline-color: var(--rainbow-accent);
 }
 
 body.rainbow-mode .task-category-icon svg {
@@ -948,6 +958,12 @@ body.rainbow-mode .btn-add.focused {
 
 .task-close:hover {
     color: #fff;
+}
+
+.task-close.focused {
+    color: #fff;
+    outline: 2px solid #666;
+    outline-offset: 2px;
 }
 
 .task-category-icon {
@@ -2312,6 +2328,16 @@ body.light-mode .btn-secondary {
 body.light-mode .btn-secondary:hover {
     border-color: #aaa;
     color: #111;
+}
+
+body.light-mode .btn-secondary.focused {
+    outline: 2px solid #333;
+    outline-offset: 4px;
+}
+
+body.rainbow-mode .btn-secondary.focused {
+    outline: 2px solid #fff;
+    outline-offset: 4px;
 }
 
 .passkey-setup {
