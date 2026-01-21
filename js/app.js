@@ -797,56 +797,61 @@ const App = (function() {
             }
         });
 
-        // Task view keyboard navigation
-        let taskViewFocus = 0; // 0=start/done, 1=skip, 2=reset (when visible)
-        const taskViewButtons = function() {
-            const btns = [];
+        // Task view keyboard navigation - simplified DOM-based approach
+        function getVisibleTaskButtons() {
+            var btns = [];
             if (!startBtn.classList.contains('hidden')) btns.push(startBtn);
             if (!doneBtn.classList.contains('hidden')) btns.push(doneBtn);
             if (!skipBtn.classList.contains('hidden')) btns.push(skipBtn);
             if (!resetBtn.classList.contains('hidden')) btns.push(resetBtn);
             return btns;
-        };
+        }
 
-        function updateTaskViewFocus() {
-            const btns = taskViewButtons();
-            btns.forEach(function(btn, i) {
-                btn.classList.toggle('focused', i === taskViewFocus);
-            });
+        function getTaskFocusedButton() {
+            var btns = getVisibleTaskButtons();
+            for (var i = 0; i < btns.length; i++) {
+                if (btns[i].classList.contains('focused')) {
+                    return { btn: btns[i], index: i, btns: btns };
+                }
+            }
+            return { btn: null, index: -1, btns: btns };
+        }
+
+        function setTaskFocus(index) {
+            var btns = getVisibleTaskButtons();
+            // Clear all focus
+            startBtn.classList.remove('focused');
+            doneBtn.classList.remove('focused');
+            skipBtn.classList.remove('focused');
+            resetBtn.classList.remove('focused');
+            // Set focus on target
+            if (btns[index]) {
+                btns[index].classList.add('focused');
+            }
         }
 
         document.addEventListener('keydown', function(e) {
             // Only handle when task view is visible
             if (taskView.classList.contains('hidden')) return;
 
-            const btns = taskViewButtons();
-            if (btns.length === 0) return;
+            var state = getTaskFocusedButton();
+            if (state.btns.length === 0) return;
 
             if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
                 e.preventDefault();
-                taskViewFocus = (taskViewFocus - 1 + btns.length) % btns.length;
-                updateTaskViewFocus();
+                var newIndex = state.index <= 0 ? state.btns.length - 1 : state.index - 1;
+                setTaskFocus(newIndex);
                 playSound('tick');
             } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
                 e.preventDefault();
-                taskViewFocus = (taskViewFocus + 1) % btns.length;
-                updateTaskViewFocus();
+                var newIndex = state.index >= state.btns.length - 1 ? 0 : state.index + 1;
+                setTaskFocus(newIndex);
                 playSound('tick');
             } else if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 e.stopPropagation();
-                // Find the button that actually has .focused class
-                let targetBtn = btns.find(function(btn) {
-                    return btn.classList.contains('focused');
-                });
-                // Fallback to index if no focused class found
-                if (!targetBtn && btns[taskViewFocus]) {
-                    targetBtn = btns[taskViewFocus];
-                }
-                // Final fallback to first button
-                if (!targetBtn && btns.length > 0) {
-                    targetBtn = btns[0];
-                }
+                // Click the focused button, or first button if none focused
+                var targetBtn = state.btn || state.btns[0];
                 if (targetBtn) {
                     playClick('select');
                     targetBtn.click();
@@ -857,10 +862,9 @@ const App = (function() {
             }
         });
 
-        // Make task view focus functions available globally within IIFE
+        // Reset focus to first button when task view opens
         window._taskViewFocusReset = function() {
-            taskViewFocus = 0;
-            updateTaskViewFocus();
+            setTaskFocus(0);
         };
 
         // Add modal - category wheel
