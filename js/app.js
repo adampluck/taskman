@@ -783,14 +783,17 @@ const App = (function() {
                 }
             } else if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
+                e.stopImmediatePropagation();
                 if (focusArea === 'button' && !pickBtn.disabled) {
                     playClick('select');
                     pickBtn.click();
                 } else if (focusArea === 'header') {
+                    playClick('select');
                     if (headerFocus === 0) authToggle.click();
                     else if (headerFocus === 1) themeToggleBtn.click();
                     else soundToggleBtn.click();
                 } else if (focusArea === 'footer') {
+                    playClick('select');
                     if (footerFocus === 0) manageToggle.click();
                     else addToggle.click();
                 }
