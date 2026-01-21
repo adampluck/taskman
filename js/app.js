@@ -1379,12 +1379,12 @@ const App = (function() {
             }
         });
 
-        // Clear keyboard focus indicators when mouse is used
-        document.addEventListener('mousemove', function() {
+        // Clear keyboard focus indicators when mouse clicks
+        document.addEventListener('mousedown', function() {
             document.querySelectorAll('.focused').forEach(function(el) {
                 el.classList.remove('focused');
             });
-        }, { once: false, passive: true });
+        }, { passive: true });
     }
 
     function registerServiceWorker() {
