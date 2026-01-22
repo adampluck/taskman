@@ -836,8 +836,8 @@ const App = (function() {
         );
 
         // Keyboard navigation for main screen
-        // Areas: 'header', 'category', 'time', 'button', 'footer'
-        let focusArea = 'category';
+        // Areas: null (no focus), 'header', 'category', 'time', 'button', 'footer'
+        let focusArea = null; // Start with no focus indicator
         let headerFocus = 0; // 0=auth, 1=theme, 2=sound
         let footerFocus = 0; // 0=manage, 1=add
         const timeChips = Array.from(pickerTime.querySelectorAll('.time-chip'));
@@ -868,18 +868,16 @@ const App = (function() {
             updatePickButton();
         }
 
-        // Initialize focus
+        // Initialize focus - if user has 0 tasks, focus add button
+        const tasks = TaskStorage.getTasks();
+        const incompleteTasks = tasks.filter(function(t) { return !t.completed; });
+        if (incompleteTasks.length === 0) {
+            focusArea = 'footer';
+            footerFocus = 1; // add button
+        }
         updateFocusIndicators();
 
-        // Hover to focus (main screen)
-        pickerCategory.addEventListener('mouseenter', function() {
-            focusArea = 'category';
-            updateFocusIndicators();
-        });
-        pickerTime.addEventListener('mouseenter', function() {
-            focusArea = 'time';
-            updateFocusIndicators();
-        });
+        // Hover to focus (main screen) - only for buttons, not category/time
         pickBtn.addEventListener('mouseenter', function() {
             focusArea = 'button';
             updateFocusIndicators();
@@ -918,7 +916,9 @@ const App = (function() {
 
             if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                if (focusArea === 'footer') {
+                if (focusArea === null) {
+                    focusArea = 'category';
+                } else if (focusArea === 'footer') {
                     focusArea = 'button';
                 } else if (focusArea === 'button') {
                     focusArea = 'time';
@@ -931,7 +931,9 @@ const App = (function() {
                 playSound('tick');
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                if (focusArea === 'header') {
+                if (focusArea === null) {
+                    focusArea = 'category';
+                } else if (focusArea === 'header') {
                     focusArea = 'category';
                 } else if (focusArea === 'category') {
                     focusArea = 'time';
@@ -944,7 +946,11 @@ const App = (function() {
                 playSound('tick');
             } else if (e.key === 'ArrowLeft') {
                 e.preventDefault();
-                if (focusArea === 'category') {
+                if (focusArea === null) {
+                    focusArea = 'category';
+                    updateFocusIndicators();
+                    playSound('tick');
+                } else if (focusArea === 'category') {
                     const currentIndex = parseInt(pickerCategory.dataset.index, 10);
                     updateWheel(currentIndex - 1);
                     playClick('scroll');
@@ -963,7 +969,11 @@ const App = (function() {
                 }
             } else if (e.key === 'ArrowRight') {
                 e.preventDefault();
-                if (focusArea === 'category') {
+                if (focusArea === null) {
+                    focusArea = 'category';
+                    updateFocusIndicators();
+                    playSound('tick');
+                } else if (focusArea === 'category') {
                     const currentIndex = parseInt(pickerCategory.dataset.index, 10);
                     updateWheel(currentIndex + 1);
                     playClick('scroll');
@@ -1244,7 +1254,19 @@ const App = (function() {
         document.getElementById('auth-toggle').addEventListener('click', openAuthModal);
         document.getElementById('close-auth').addEventListener('click', closeAuthModal);
         document.getElementById('otp-email-form').addEventListener('submit', handleOtpEmailSubmit);
+        document.getElementById('auth-email').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('otp-email-form').requestSubmit();
+            }
+        });
         document.getElementById('otp-verify-form').addEventListener('submit', handleOtpVerifySubmit);
+        document.getElementById('otp-code').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('otp-verify-form').requestSubmit();
+            }
+        });
         document.getElementById('sign-out').addEventListener('click', handleSignOut);
         document.getElementById('auth-back').addEventListener('click', function() {
             showAuthView('signin');

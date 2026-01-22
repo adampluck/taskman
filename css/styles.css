@@ -1985,6 +1985,17 @@ body.light-mode .sync-status.syncing .sync-icon::before {
 }
 
 /* Auth Modal */
+#auth-modal {
+    align-items: flex-start;
+    padding-top: 15vh;
+}
+
+@media (max-width: 600px) {
+    #auth-modal {
+        padding-top: 10vh;
+    }
+}
+
 .auth-modal-content {
     text-align: center;
     max-width: 320px;
