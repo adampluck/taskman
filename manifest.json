@@ -2,7 +2,7 @@
     "name": "Taskman",
     "short_name": "Taskman",
     "description": "Stop overthinking. Pick a task. Do it.",
-    "start_url": "/taskman/",
+    "start_url": "/",
     "display": "standalone",
     "background_color": "#000000",
     "theme_color": "#000000",
