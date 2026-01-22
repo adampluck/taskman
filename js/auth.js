@@ -88,6 +88,20 @@ const Auth = (function() {
         if (error) throw error;
     }
 
+    async function signInWithGoogle() {
+        const client = getSupabase();
+        if (!client) throw new Error('Supabase not configured');
+
+        const { error } = await client.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin
+            }
+        });
+
+        if (error) throw error;
+    }
+
     async function signOut() {
         const client = getSupabase();
         if (!client) return;
@@ -136,6 +150,7 @@ const Auth = (function() {
         init: init,
         sendOtp: sendOtp,
         verifyOtp: verifyOtp,
+        signInWithGoogle: signInWithGoogle,
         signOut: signOut,
         onAuthStateChange: onAuthStateChange,
         getUser: getUser,

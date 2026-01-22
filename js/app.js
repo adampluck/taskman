@@ -433,6 +433,15 @@ const App = (function() {
         }
     }
 
+    async function handleGoogleSignIn() {
+        try {
+            await Auth.signInWithGoogle();
+        } catch (error) {
+            console.error('Google sign in error:', error);
+            showToast('Failed to sign in with Google');
+        }
+    }
+
     async function handleSignOut() {
         try {
             await Auth.signOut();
@@ -1275,6 +1284,7 @@ const App = (function() {
                 document.getElementById('otp-email-form').requestSubmit();
             }
         });
+        document.getElementById('google-signin').addEventListener('click', handleGoogleSignIn);
         document.getElementById('otp-verify-form').addEventListener('submit', handleOtpVerifySubmit);
         document.getElementById('otp-code').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
