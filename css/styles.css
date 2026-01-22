@@ -1275,6 +1275,13 @@ body.rainbow-mode .btn-reset.focused {
     z-index: 5;
 }
 
+@media (max-width: 480px) {
+    .add-hint {
+        bottom: 70px;
+        right: 70px;
+    }
+}
+
 .add-hint-label {
     font-size: 0.875rem;
     color: #888;
