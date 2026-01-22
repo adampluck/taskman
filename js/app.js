@@ -382,9 +382,24 @@ const App = (function() {
 
     let pendingOtpEmail = null;
 
+    function isValidEmail(email) {
+        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
     async function handleOtpEmailSubmit(e) {
         e.preventDefault();
-        const email = document.getElementById('auth-email').value;
+        const email = document.getElementById('auth-email').value.trim();
+
+        if (!email) {
+            showToast('Please enter an email');
+            return;
+        }
+
+        if (!isValidEmail(email)) {
+            showToast('Please enter a valid email');
+            return;
+        }
 
         try {
             await Auth.sendOtp(email);
