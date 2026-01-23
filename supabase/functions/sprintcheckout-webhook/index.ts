@@ -13,14 +13,15 @@ serve(async (req) => {
     // Log the webhook payload for debugging
     console.log("Sprintcheckout webhook received:", JSON.stringify(body));
 
-    // Extract event type and data
-    // Sprintcheckout sends: { event: "payment.completed", data: { orderId, amount, ... } }
-    const { event, data } = body;
+    // Sprintcheckout sends: { orderId, amount, currency, status, ... }
+    const { orderId, status } = body;
 
-    if (!event || !data) {
-      console.error("Invalid webhook payload");
-      return new Response("Invalid payload", { status: 400 });
+    if (!orderId) {
+      console.error("Missing orderId in webhook payload");
+      return new Response("Missing orderId", { status: 400 });
     }
+
+    console.log(`Payment webhook: orderId=${orderId}, status=${status}`);
 
     // Initialize Supabase admin client
     const supabaseAdmin = createClient(
@@ -28,56 +29,38 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    switch (event) {
-      case "payment.completed": {
-        const userId = data.orderId;
+    if (status === "SUCCESS") {
+      // Update user to Pro tier
+      const { error } = await supabaseAdmin
+        .from("user_subscriptions")
+        .upsert({
+          user_id: orderId,
+          tier: "pro",
+          payment_status: "completed",
+          paid_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: "user_id",
+        });
 
-        if (!userId) {
-          console.error("Missing orderId (user ID) in webhook data");
-          break;
-        }
-
-        // Update user to Pro tier
-        const { error } = await supabaseAdmin
-          .from("user_subscriptions")
-          .upsert({
-            user_id: userId,
-            tier: "pro",
-            payment_status: "completed",
-            paid_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }, {
-            onConflict: "user_id",
-          });
-
-        if (error) {
-          console.error("Failed to update subscription:", error);
-          throw error;
-        }
-
-        console.log(`User ${userId} upgraded to Pro via crypto payment`);
-        break;
+      if (error) {
+        console.error("Failed to update subscription:", error);
+        throw error;
       }
 
-      case "payment.failed": {
-        const userId = data.orderId;
+      console.log(`User ${orderId} upgraded to Pro via crypto payment`);
+    } else if (status === "FAILED" || status === "CANCELLED") {
+      await supabaseAdmin
+        .from("user_subscriptions")
+        .update({
+          payment_status: status.toLowerCase(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", orderId);
 
-        if (userId) {
-          await supabaseAdmin
-            .from("user_subscriptions")
-            .update({
-              payment_status: "failed",
-              updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", userId);
-
-          console.log(`Crypto payment failed for user ${userId}`);
-        }
-        break;
-      }
-
-      default:
-        console.log(`Unhandled event type: ${event}`);
+      console.log(`Crypto payment ${status} for user ${orderId}`);
+    } else {
+      console.log(`Unhandled payment status: ${status}`);
     }
 
     return new Response(JSON.stringify({ received: true }), {

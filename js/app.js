@@ -682,7 +682,7 @@ const App = (function() {
             }
         }
 
-        // Show/hide upgrade button
+        // Show/hide upgrade button and crypto links
         if (upgradeBtn) {
             if (Payments.isProUser()) {
                 upgradeBtn.classList.add('hidden');
@@ -690,6 +690,15 @@ const App = (function() {
                 upgradeBtn.classList.remove('hidden');
             }
         }
+
+        // Show/hide crypto payment links
+        document.querySelectorAll('.crypto-link').forEach(function(link) {
+            if (Payments.isProUser()) {
+                link.classList.add('hidden');
+            } else {
+                link.classList.remove('hidden');
+            }
+        });
     }
 
     function initTheme() {

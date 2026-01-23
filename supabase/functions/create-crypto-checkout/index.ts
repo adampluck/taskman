@@ -81,9 +81,18 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    console.log("Sprintcheckout API response:", JSON.stringify(data));
+
+    // Find the payment URL
+    const paymentUrl = data.redirectUrl;
+
+    if (!paymentUrl) {
+      console.error("No payment URL in response:", JSON.stringify(data));
+      throw new Error("No payment URL returned");
+    }
 
     return new Response(
-      JSON.stringify({ url: data.paymentUrl }),
+      JSON.stringify({ url: paymentUrl }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
