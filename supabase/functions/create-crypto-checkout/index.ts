@@ -62,7 +62,7 @@ serve(async (req) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
+        "X-SC-ApiKey": apiKey,
       },
       body: JSON.stringify({
         orderType: "STATIC",
