@@ -2753,7 +2753,7 @@ body.rainbow-mode .tasks-remaining {
     margin-top: 12px;
     font-size: 0.8125rem;
     color: #666;
-    text-decoration: none;
+    text-decoration: underline;
     transition: color 0.15s;
 }
 

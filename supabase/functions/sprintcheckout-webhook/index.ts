@@ -8,6 +8,22 @@ serve(async (req) => {
   }
 
   try {
+    // Verify webhook API key if configured
+    const webhookKey = Deno.env.get("SPRINTCHECKOUT_WEBHOOK_KEY");
+    if (webhookKey) {
+      const providedKey = req.headers.get("X-Webhook-Key") ||
+                          req.headers.get("X-Api-Key") ||
+                          req.headers.get("Authorization");
+
+      // Log headers for debugging (remove in production)
+      console.log("Webhook headers:", JSON.stringify(Object.fromEntries(req.headers.entries())));
+
+      if (providedKey !== webhookKey && providedKey !== `Bearer ${webhookKey}`) {
+        console.error("Invalid webhook key");
+        return new Response("Unauthorized", { status: 401 });
+      }
+    }
+
     const body = await req.json();
 
     // Log the webhook payload for debugging
