@@ -2746,3 +2746,34 @@ body.rainbow-mode .tier-label {
 body.rainbow-mode .tasks-remaining {
     color: var(--rainbow-muted);
 }
+
+/* Crypto Payment Link */
+.crypto-link {
+    display: block;
+    margin-top: 12px;
+    font-size: 0.8125rem;
+    color: #666;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.crypto-link:hover {
+    color: #888;
+    text-decoration: underline;
+}
+
+body.light-mode .crypto-link {
+    color: #888;
+}
+
+body.light-mode .crypto-link:hover {
+    color: #666;
+}
+
+body.rainbow-mode .crypto-link {
+    color: var(--rainbow-muted);
+}
+
+body.rainbow-mode .crypto-link:hover {
+    color: var(--rainbow-fg);
+}

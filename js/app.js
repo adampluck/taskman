@@ -632,6 +632,17 @@ const App = (function() {
         }
     }
 
+    async function handleCryptoPayment(e) {
+        e.preventDefault();
+        try {
+            showToast('Redirecting to crypto checkout...');
+            await Payments.initiateCryptoCheckout();
+        } catch (error) {
+            console.error('Crypto checkout error:', error);
+            showToast('Failed to start crypto checkout');
+        }
+    }
+
     function updatePaymentUI() {
         var paymentSection = document.getElementById('payment-section');
         var tierBadge = document.getElementById('tier-badge');
@@ -1316,6 +1327,11 @@ const App = (function() {
         if (upgradeBtn) {
             upgradeBtn.addEventListener('click', handleUpgrade);
         }
+
+        // Crypto payment links
+        document.querySelectorAll('.crypto-link').forEach(function(link) {
+            link.addEventListener('click', handleCryptoPayment);
+        });
 
         // Keyboard handler for modals
         document.addEventListener('keydown', function(e) {

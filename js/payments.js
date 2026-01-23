@@ -126,6 +126,36 @@ const Payments = (function() {
     }
 
     /**
+     * Initiate Sprintcheckout crypto checkout
+     */
+    async function initiateCryptoCheckout() {
+        const client = getSupabase();
+        if (!client) throw new Error('Supabase not configured');
+
+        const { data: { session } } = await client.auth.getSession();
+        if (!session) throw new Error('Must be signed in');
+
+        const response = await fetch(
+            Config.SUPABASE_URL + '/functions/v1/create-crypto-checkout',
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + session.access_token,
+                    'apikey': Config.SUPABASE_ANON_KEY,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ origin: window.location.origin }),
+            }
+        );
+
+        const data = await response.json();
+        if (data.error) throw new Error(data.error);
+        if (data.url) {
+            window.location.href = data.url;
+        }
+    }
+
+    /**
      * Register a listener for subscription status changes
      */
     function onStatusChange(callback) {
@@ -198,6 +228,7 @@ const Payments = (function() {
         getTaskLimit: getTaskLimit,
         getSyncedTaskCount: getSyncedTaskCount,
         initiateCheckout: initiateCheckout,
+        initiateCryptoCheckout: initiateCryptoCheckout,
         onStatusChange: onStatusChange,
         handlePaymentResult: handlePaymentResult,
         incrementTaskCount: incrementTaskCount,
