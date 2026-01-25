@@ -96,6 +96,28 @@ const Payments = (function() {
     }
 
     /**
+     * Get nudge thresholds for completed tasks
+     * Returns array of thresholds, e.g. [3, 10]
+     */
+    function getNudgeCompletedThresholds() {
+        if (!subscriptionStatus || !subscriptionStatus.nudge_completed) {
+            return [3, 10]; // Defaults
+        }
+        return subscriptionStatus.nudge_completed;
+    }
+
+    /**
+     * Get nudge thresholds for added tasks
+     * Returns array of thresholds, e.g. [5, 15]
+     */
+    function getNudgeAddedThresholds() {
+        if (!subscriptionStatus || !subscriptionStatus.nudge_added) {
+            return [5, 15]; // Defaults
+        }
+        return subscriptionStatus.nudge_added;
+    }
+
+    /**
      * Initiate Stripe checkout
      */
     async function initiateCheckout() {
@@ -227,6 +249,8 @@ const Payments = (function() {
         getRemainingTasks: getRemainingTasks,
         getTaskLimit: getTaskLimit,
         getSyncedTaskCount: getSyncedTaskCount,
+        getNudgeCompletedThresholds: getNudgeCompletedThresholds,
+        getNudgeAddedThresholds: getNudgeAddedThresholds,
         initiateCheckout: initiateCheckout,
         initiateCryptoCheckout: initiateCryptoCheckout,
         onStatusChange: onStatusChange,

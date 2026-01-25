@@ -773,6 +773,7 @@ const App = (function() {
 
         // Handle empty state - dim view and disable controls
         if (allTasks.length === 0) {
+            promptView.classList.remove('hidden');
             pickBtn.classList.add('hidden');
             promptView.classList.add('empty-state');
             pickerCategory.classList.add('disabled');
@@ -783,6 +784,7 @@ const App = (function() {
         }
 
         // Remove empty state when tasks exist
+        promptView.classList.remove('hidden');
         pickBtn.classList.remove('hidden');
         promptView.classList.remove('empty-state');
         pickerCategory.classList.remove('disabled');
@@ -1319,6 +1321,10 @@ const App = (function() {
         document.getElementById('auth-email').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
+                const btn = document.querySelector('#otp-email-form .btn-add');
+                btn.classList.add('active');
+                playSound('click');
+                setTimeout(function() { btn.classList.remove('active'); }, 150);
                 document.getElementById('otp-email-form').requestSubmit();
             }
         });
@@ -1327,6 +1333,10 @@ const App = (function() {
         document.getElementById('otp-code').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
+                const btn = document.querySelector('#otp-verify-form .btn-add');
+                btn.classList.add('active');
+                playSound('click');
+                setTimeout(function() { btn.classList.remove('active'); }, 150);
                 document.getElementById('otp-verify-form').requestSubmit();
             }
         });
@@ -2103,12 +2113,19 @@ const App = (function() {
         const tasks = TaskStorage.getTasks();
         const completedCount = tasks.filter(function(t) { return t.completed; }).length;
 
-        // Check thresholds (highest first) - 10, then 3
+        // Get thresholds from config (fallback to defaults)
+        var thresholds = (typeof Payments !== 'undefined')
+            ? Payments.getNudgeCompletedThresholds()
+            : [3, 10];
+
+        // Check thresholds (highest first)
         var threshold = null;
-        if (completedCount >= 10 && !localStorage.getItem('taskman-signup-dismissed-completed-10')) {
-            threshold = 10;
-        } else if (completedCount >= 3 && !localStorage.getItem('taskman-signup-dismissed-completed-3')) {
-            threshold = 3;
+        for (var i = thresholds.length - 1; i >= 0; i--) {
+            var t = thresholds[i];
+            if (completedCount >= t && !localStorage.getItem('taskman-signup-dismissed-completed-' + t)) {
+                threshold = t;
+                break;
+            }
         }
 
         if (threshold) {
@@ -2313,13 +2330,22 @@ const App = (function() {
         // Show signup prompt after tasks added (if not logged in)
         if (typeof Auth === 'undefined' || !Auth.isAuthenticated()) {
             const totalTasks = TaskStorage.getTasks().length;
-            // Check thresholds (highest first) - 15, then 5
+
+            // Get thresholds from config (fallback to defaults)
+            var thresholds = (typeof Payments !== 'undefined')
+                ? Payments.getNudgeAddedThresholds()
+                : [5, 15];
+
+            // Check thresholds (highest first)
             var threshold = null;
-            if (totalTasks >= 15 && !localStorage.getItem('taskman-signup-dismissed-added-15')) {
-                threshold = 15;
-            } else if (totalTasks >= 5 && !localStorage.getItem('taskman-signup-dismissed-added-5')) {
-                threshold = 5;
+            for (var i = thresholds.length - 1; i >= 0; i--) {
+                var t = thresholds[i];
+                if (totalTasks >= t && !localStorage.getItem('taskman-signup-dismissed-added-' + t)) {
+                    threshold = t;
+                    break;
+                }
             }
+
             if (threshold) {
                 setTimeout(function() {
                     showSignupPrompt(totalTasks, 'added', threshold);
