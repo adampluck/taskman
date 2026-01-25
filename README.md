@@ -4,7 +4,7 @@
 
 A lightweight, offline-capable Progressive Web App for managing tasks — with a fun twist: it can randomly pick a task for you when you're feeling overwhelmed or indecisive.
 
-https://github.com/adampluck/taskman
+https://taskman.xyz
 
 ## Features
 
