@@ -1,7 +1,7 @@
 {
     "name": "Taskman",
     "short_name": "Taskman",
-    "description": "Stop overthinking. Pick a task. Do it.",
+    "description": "Stop overthinking. Randomly pick a task. Do it.",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#000000",

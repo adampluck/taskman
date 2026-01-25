@@ -34,7 +34,6 @@ const App = (function() {
     let timerInterval = null;
     let timerStartTime = null;
     let timerLimit = 0;
-    let timerNotificationSent = false;
 
     // Add modal elements
     const addToggle = document.getElementById('add-toggle');
@@ -770,6 +769,27 @@ const App = (function() {
         const maxTime = parseInt(pickerTime.dataset.value, 10);
 
         const allTasks = TaskStorage.getTasks();
+        const addHint = document.getElementById('add-hint');
+
+        // Handle empty state - dim view and disable controls
+        if (allTasks.length === 0) {
+            pickBtn.classList.add('hidden');
+            promptView.classList.add('empty-state');
+            pickerCategory.classList.add('disabled');
+            pickerTime.classList.add('disabled');
+            addToggle.classList.add('pulsing');
+            if (addHint) addHint.classList.remove('hidden');
+            return;
+        }
+
+        // Remove empty state when tasks exist
+        pickBtn.classList.remove('hidden');
+        promptView.classList.remove('empty-state');
+        pickerCategory.classList.remove('disabled');
+        pickerTime.classList.remove('disabled');
+        addToggle.classList.remove('pulsing');
+        if (addHint) addHint.classList.add('hidden');
+
         let tasks = allTasks.filter(t => !t.completed);
 
         if (category !== 'all') {
@@ -781,16 +801,6 @@ const App = (function() {
         }
 
         pickBtn.disabled = tasks.length === 0;
-
-        // Show/hide add hint based on total task count
-        const addHint = document.getElementById('add-hint');
-        if (addHint) {
-            if (allTasks.length === 0 && !promptView.classList.contains('hidden')) {
-                addHint.classList.remove('hidden');
-            } else {
-                addHint.classList.add('hidden');
-            }
-        }
     }
 
     function bindEvents() {
@@ -1932,15 +1942,10 @@ const App = (function() {
         emptyView.classList.add('hidden');
         view.classList.remove('hidden');
 
-        // Update add hint visibility
+        // Hide add hint when not on prompt view
         const addHint = document.getElementById('add-hint');
-        if (addHint) {
-            const allTasks = TaskStorage.getTasks();
-            if (view === promptView && allTasks.length === 0) {
-                addHint.classList.remove('hidden');
-            } else {
-                addHint.classList.add('hidden');
-            }
+        if (addHint && view !== promptView) {
+            addHint.classList.add('hidden');
         }
     }
 
@@ -1985,7 +1990,6 @@ const App = (function() {
 
         // Reset timer display
         timerStartTime = null;
-        timerNotificationSent = false;
         timerDisplay.textContent = '00:00';
         taskTimer.classList.add('hidden');
         taskTimer.classList.remove('running', 'warning', 'overtime');
@@ -2030,7 +2034,6 @@ const App = (function() {
 
         // Reset timer display
         timerStartTime = null;
-        timerNotificationSent = false;
         timerDisplay.textContent = '00:00';
         taskTimer.classList.add('hidden');
         taskTimer.classList.remove('running', 'warning', 'overtime');
@@ -2185,12 +2188,8 @@ const App = (function() {
     function startTimer() {
         if (timerInterval) return; // Already running
 
-        // Request notification permission
-        requestNotificationPermission();
-
         // Store start time
         timerStartTime = Date.now();
-        timerNotificationSent = false;
 
         // Hide start button, show timer
         startBtn.classList.add('hidden');
@@ -2219,7 +2218,6 @@ const App = (function() {
     function resetTimer() {
         stopTimer();
         timerStartTime = Date.now();
-        timerNotificationSent = false;
         updateTimerDisplay();
         taskTimer.classList.remove('warning', 'overtime');
         taskTimer.classList.add('running');
@@ -2253,42 +2251,10 @@ const App = (function() {
             if (elapsed >= timerLimit) {
                 taskTimer.classList.remove('warning');
                 taskTimer.classList.add('overtime');
-
-                // Send notification only once when time is up
-                if (!timerNotificationSent) {
-                    timerNotificationSent = true;
-                    sendTimerNotification();
-                }
             } else if (elapsed >= warningThreshold) {
                 taskTimer.classList.add('warning');
             }
         }
-    }
-
-    // Notification functions
-    function requestNotificationPermission() {
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-    }
-
-    function sendTimerNotification() {
-        if ('Notification' in window && Notification.permission === 'granted') {
-            const notification = new Notification('Time\'s up!', {
-                body: currentTask ? currentTask.title : 'Your task timer has ended',
-                icon: 'icons/icon-192.svg',
-                tag: 'timer-notification',
-                requireInteraction: true
-            });
-
-            // Auto close after 10 seconds
-            setTimeout(function() {
-                notification.close();
-            }, 10000);
-        }
-
-        // Also play a sound
-        playClick('select');
     }
 
     // Add Modal
