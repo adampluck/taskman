@@ -800,7 +800,11 @@ const App = (function() {
             tasks = tasks.filter(t => t.timeEstimate <= maxTime);
         }
 
-        pickBtn.disabled = tasks.length === 0;
+        if (tasks.length === 0) {
+            pickBtn.classList.add('is-disabled');
+        } else {
+            pickBtn.classList.remove('is-disabled');
+        }
     }
 
     function bindEvents() {
@@ -1270,6 +1274,10 @@ const App = (function() {
         // Manage modal
         manageToggle.addEventListener('click', openManageModal);
         closeManage.addEventListener('click', closeManageModal);
+        document.getElementById('manage-add-btn').addEventListener('click', function() {
+            closeManageModal();
+            openAddModal();
+        });
 
         // Category filter
         manageCategoryFilter.addEventListener('click', function(e) {
@@ -1967,7 +1975,8 @@ const App = (function() {
         }
 
         if (tasks.length === 0) {
-            showView(emptyView);
+            playSound('delete');
+            showToast('No tasks match. Try a different category or time.', 'info');
             return;
         }
 
@@ -2319,9 +2328,13 @@ const App = (function() {
         }
     }
 
-    function showToast(message) {
+    function showToast(message, type) {
         const toast = document.getElementById('toast');
         toast.textContent = message;
+        toast.classList.remove('info');
+        if (type === 'info') {
+            toast.classList.add('info');
+        }
         toast.classList.add('show');
         setTimeout(function() {
             toast.classList.remove('show');
