@@ -2307,7 +2307,7 @@ body.light-mode .btn-email.focused {
 @media (max-width: 600px) {
     #email-modal {
         align-items: flex-start;
-        padding-top: 15vh;
+        padding-top: 5vh;
     }
 }
 
