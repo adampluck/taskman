@@ -1,9 +1,8 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  // Set base path for GitHub Pages (repo name)
-  // Change to '/' if using a custom domain
-  base: '/taskman/',
+  // Custom domain taskman.xyz - use root path
+  base: '/',
   build: {
     outDir: 'dist',
     rollupOptions: {
