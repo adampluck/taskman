@@ -480,22 +480,6 @@ const App = (function() {
         }
     }
 
-    async function handleWalletSignIn() {
-        try {
-            await Auth.signInWithWallet();
-            showToast('Signed in with wallet');
-        } catch (error) {
-            console.error('Wallet sign in error:', error);
-            if (error.message.includes('No wallet detected')) {
-                showToast('No wallet found. Install MetaMask.');
-            } else if (error.code === 4001) {
-                showToast('Sign-in cancelled');
-            } else {
-                showToast('Failed to sign in with wallet');
-            }
-        }
-    }
-
     async function handleSignOut() {
         try {
             await Auth.signOut();
@@ -576,14 +560,7 @@ const App = (function() {
 
         const emailEl = document.getElementById('account-email');
         if (emailEl) {
-            // Check if user signed in with wallet
-            const walletAddress = user.user_metadata?.wallet_address;
-            if (walletAddress) {
-                // Show truncated wallet address: 0x1234...5678
-                emailEl.textContent = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
-            } else {
-                emailEl.textContent = user.email;
-            }
+            emailEl.textContent = user.email;
         }
 
         const syncedCountEl = document.getElementById('tasks-synced');
@@ -1391,7 +1368,6 @@ const App = (function() {
             }
         });
         document.getElementById('google-signin').addEventListener('click', handleGoogleSignIn);
-        document.getElementById('wallet-signin').addEventListener('click', handleWalletSignIn);
         document.getElementById('otp-verify-form').addEventListener('submit', handleOtpVerifySubmit);
         document.getElementById('otp-code').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
