@@ -2263,6 +2263,57 @@ body.light-mode .auth-divider::after {
     flex-shrink: 0;
 }
 
+.btn-email {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px;
+    margin-top: 12px;
+    background: transparent;
+    border: 1px solid #555;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-email:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: #888;
+}
+
+.btn-email svg {
+    flex-shrink: 0;
+}
+
+body.light-mode .btn-email {
+    border-color: #ddd;
+    color: #333;
+}
+
+body.light-mode .btn-email:hover {
+    background: rgba(0,0,0,0.03);
+    border-color: #aaa;
+}
+
+.btn-google.focused {
+    outline: 2px solid #4285F4;
+    outline-offset: 2px;
+}
+
+.btn-email.focused {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+body.light-mode .btn-email.focused {
+    outline-color: #333;
+}
+
 .btn-passkey {
     width: 100%;
     display: flex;

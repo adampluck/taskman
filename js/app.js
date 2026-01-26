@@ -269,6 +269,7 @@ const App = (function() {
 
     // Auth Modal elements
     const authModal = document.getElementById('auth-modal');
+    const emailModal = document.getElementById('email-modal');
     const authToggle = document.getElementById('auth-toggle');
     const syncStatus = document.getElementById('sync-status');
 
@@ -353,14 +354,25 @@ const App = (function() {
             window._authFocusArea = 'button';
         } else {
             showAuthView('signin');
-            document.getElementById('auth-email').focus();
-            // Initialize HCaptcha if configured
-            setTimeout(initHCaptcha, 100);
+            window._authFocusArea = 'button';
         }
     }
 
     function closeAuthModal() {
         authModal.classList.add('hidden');
+        playSound('close');
+    }
+
+    function openEmailModal() {
+        authModal.classList.add('hidden');
+        emailModal.classList.remove('hidden');
+        playSound('open');
+        document.getElementById('auth-email').focus();
+        setTimeout(initHCaptcha, 100);
+    }
+
+    function closeEmailModal() {
+        emailModal.classList.add('hidden');
         playSound('close');
     }
 
@@ -440,6 +452,9 @@ const App = (function() {
             await Auth.sendOtp(email, captchaToken);
             pendingOtpEmail = email;
             document.getElementById('sent-email').textContent = email;
+            // Close email modal, open auth modal with OTP view
+            closeEmailModal();
+            authModal.classList.remove('hidden');
             showAuthView('otp');
             document.getElementById('otp-code').focus();
             showToast('Code sent');
@@ -1368,6 +1383,12 @@ const App = (function() {
             }
         });
         document.getElementById('google-signin').addEventListener('click', handleGoogleSignIn);
+        document.getElementById('email-signin').addEventListener('click', openEmailModal);
+        document.getElementById('close-email-modal').addEventListener('click', closeEmailModal);
+        document.getElementById('email-back').addEventListener('click', function() {
+            closeEmailModal();
+            authModal.classList.remove('hidden');
+        });
         document.getElementById('otp-verify-form').addEventListener('submit', handleOtpVerifySubmit);
         document.getElementById('otp-code').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
@@ -1381,8 +1402,11 @@ const App = (function() {
         });
         document.getElementById('sign-out').addEventListener('click', handleSignOut);
         document.getElementById('auth-back').addEventListener('click', function() {
-            showAuthView('signin');
+            // Go back to email modal from OTP view
+            authModal.classList.add('hidden');
+            emailModal.classList.remove('hidden');
             document.getElementById('otp-code').value = '';
+            document.getElementById('auth-email').focus();
         });
         document.getElementById('migrate-yes').addEventListener('click', handleMigrate);
         document.getElementById('migrate-no').addEventListener('click', handleSkipMigrate);
@@ -1696,12 +1720,10 @@ const App = (function() {
                 if (e.key === 'ArrowUp') {
                     e.preventDefault();
                     if (!signinView.classList.contains('hidden')) {
-                        if (window._authFocusArea === 'input') {
+                        if (window._authFocusArea === 'button') {
                             window._authFocusArea = 'close';
-                            authEmail.blur();
-                        } else if (window._authFocusArea === 'button') {
-                            window._authFocusArea = 'input';
-                            authEmail.focus();
+                        } else if (window._authFocusArea === 'button2') {
+                            window._authFocusArea = 'button';
                         }
                     } else if (!otpView.classList.contains('hidden')) {
                         if (window._authFocusArea === 'input') {
@@ -1734,11 +1756,9 @@ const App = (function() {
                     e.preventDefault();
                     if (!signinView.classList.contains('hidden')) {
                         if (window._authFocusArea === 'close') {
-                            window._authFocusArea = 'input';
-                            authEmail.focus();
-                        } else if (window._authFocusArea === 'input') {
                             window._authFocusArea = 'button';
-                            authEmail.blur();
+                        } else if (window._authFocusArea === 'button') {
+                            window._authFocusArea = 'button2';
                         }
                     } else if (!otpView.classList.contains('hidden')) {
                         if (window._authFocusArea === 'close') {
@@ -1806,10 +1826,7 @@ const App = (function() {
                         if (!signinView.classList.contains('hidden')) {
                             e.preventDefault();
                             playClick('select');
-                            const btn = document.querySelector('#otp-email-form .btn-add');
-                            btn.classList.add('active');
-                            setTimeout(function() { btn.classList.remove('active'); }, 150);
-                            document.getElementById('otp-email-form').requestSubmit();
+                            document.getElementById('google-signin').click();
                         } else if (!otpView.classList.contains('hidden')) {
                             e.preventDefault();
                             playClick('select');
@@ -1827,11 +1844,15 @@ const App = (function() {
                             document.getElementById('migrate-yes').click();
                         }
                     } else if (window._authFocusArea === 'button2') {
-                        if (!otpView.classList.contains('hidden')) {
+                        if (!signinView.classList.contains('hidden')) {
+                            e.preventDefault();
+                            playClick('select');
+                            document.getElementById('email-signin').click();
+                        } else if (!otpView.classList.contains('hidden')) {
                             e.preventDefault();
                             playClick('select');
                             document.getElementById('auth-back').click();
-                        } else {
+                        } else if (!migrateView.classList.contains('hidden')) {
                             e.preventDefault();
                             playClick('select');
                             document.getElementById('migrate-no').click();
@@ -1844,9 +1865,9 @@ const App = (function() {
 
         function updateAuthFocusIndicators() {
             const closeAuth = document.getElementById('close-auth');
-            const authEmail = document.getElementById('auth-email');
             const otpCode = document.getElementById('otp-code');
-            const emailSubmitBtn = document.querySelector('#otp-email-form .btn-add');
+            const googleSigninBtn = document.getElementById('google-signin');
+            const emailSigninBtn = document.getElementById('email-signin');
             const otpSubmitBtn = document.querySelector('#otp-verify-form .btn-add');
             const backBtn = document.getElementById('auth-back');
             const signOutBtn = document.getElementById('sign-out');
@@ -1857,9 +1878,9 @@ const App = (function() {
 
             // Clear all
             closeAuth.classList.remove('focused');
-            if (authEmail) authEmail.classList.remove('focused');
             if (otpCode) otpCode.classList.remove('focused');
-            if (emailSubmitBtn) emailSubmitBtn.classList.remove('focused');
+            if (googleSigninBtn) googleSigninBtn.classList.remove('focused');
+            if (emailSigninBtn) emailSigninBtn.classList.remove('focused');
             if (otpSubmitBtn) otpSubmitBtn.classList.remove('focused');
             if (backBtn) backBtn.classList.remove('focused');
             if (signOutBtn) signOutBtn.classList.remove('focused');
@@ -1871,11 +1892,8 @@ const App = (function() {
             if (window._authFocusArea === 'close') {
                 closeAuth.classList.add('focused');
             } else if (window._authFocusArea === 'input') {
-                const signinView = document.getElementById('auth-signin');
                 const otpView = document.getElementById('auth-otp');
-                if (!signinView.classList.contains('hidden') && authEmail) {
-                    authEmail.classList.add('focused');
-                } else if (!otpView.classList.contains('hidden') && otpCode) {
+                if (!otpView.classList.contains('hidden') && otpCode) {
                     otpCode.classList.add('focused');
                 }
             } else if (window._authFocusArea === 'button') {
@@ -1884,8 +1902,8 @@ const App = (function() {
                 const accountView = document.getElementById('auth-account');
                 const migrateView = document.getElementById('auth-migrate');
 
-                if (!signinView.classList.contains('hidden') && emailSubmitBtn) {
-                    emailSubmitBtn.classList.add('focused');
+                if (!signinView.classList.contains('hidden') && googleSigninBtn) {
+                    googleSigninBtn.classList.add('focused');
                 } else if (!otpView.classList.contains('hidden') && otpSubmitBtn) {
                     otpSubmitBtn.classList.add('focused');
                 } else if (!accountView.classList.contains('hidden') && signOutBtn) {
@@ -1894,10 +1912,14 @@ const App = (function() {
                     migrateYes.classList.add('focused');
                 }
             } else if (window._authFocusArea === 'button2') {
+                const signinView = document.getElementById('auth-signin');
                 const otpView = document.getElementById('auth-otp');
-                if (!otpView.classList.contains('hidden') && backBtn) {
+                const migrateView = document.getElementById('auth-migrate');
+                if (!signinView.classList.contains('hidden') && emailSigninBtn) {
+                    emailSigninBtn.classList.add('focused');
+                } else if (!otpView.classList.contains('hidden') && backBtn) {
                     backBtn.classList.add('focused');
-                } else if (migrateNo) {
+                } else if (!migrateView.classList.contains('hidden') && migrateNo) {
                     migrateNo.classList.add('focused');
                 }
             } else if (window._authFocusArea === 'period') {

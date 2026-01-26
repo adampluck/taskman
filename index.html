@@ -304,14 +304,13 @@
                     Continue with Google
                 </button>
 
-                <div class="auth-divider"><span></span>or<span></span></div>
-
-                <form id="otp-email-form">
-                    <input type="email" id="auth-email" class="task-input"
-                           placeholder="your@email.com" required autocomplete="email">
-                    <div id="hcaptcha-container" class="hcaptcha-container"></div>
-                    <button type="submit" class="btn-add">Send Code</button>
-                </form>
+                <button id="email-signin" class="btn-email">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="4" width="20" height="16" rx="2"/>
+                        <path d="M22 6l-10 7L2 6"/>
+                    </svg>
+                    Continue with Email
+                </button>
 
                 <p class="auth-guest-note">Or continue as guest - tasks stay on this device only</p>
             </div>
@@ -411,6 +410,24 @@
                     <button id="migrate-no" class="btn-secondary">No, start fresh</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Email Sign In Modal -->
+    <div id="email-modal" class="modal hidden">
+        <div class="modal-content auth-modal-content">
+            <button id="close-email-modal" class="modal-close">&times;</button>
+            <h2>Sign in with Email</h2>
+            <p class="auth-subtitle">We'll send you a code to verify</p>
+
+            <form id="otp-email-form">
+                <input type="email" id="auth-email" class="task-input"
+                       placeholder="your@email.com" required autocomplete="email">
+                <div id="hcaptcha-container" class="hcaptcha-container"></div>
+                <button type="submit" class="btn-add">Send Code</button>
+            </form>
+
+            <button id="email-back" class="btn-secondary">Back</button>
         </div>
     </div>
 
