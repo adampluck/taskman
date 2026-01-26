@@ -354,6 +354,8 @@ const App = (function() {
         } else {
             showAuthView('signin');
             document.getElementById('auth-email').focus();
+            // Initialize HCaptcha if configured
+            setTimeout(initHCaptcha, 100);
         }
     }
 
@@ -380,6 +382,30 @@ const App = (function() {
     }
 
     let pendingOtpEmail = null;
+    let hcaptchaWidgetId = null;
+
+    function initHCaptcha() {
+        // Only initialize if site key is configured and hcaptcha is loaded
+        if (!Config.HCAPTCHA_SITE_KEY || !window.hcaptcha) return;
+
+        const container = document.getElementById('hcaptcha-container');
+        if (!container || container.hasChildNodes()) return;
+
+        hcaptchaWidgetId = window.hcaptcha.render(container, {
+            sitekey: Config.HCAPTCHA_SITE_KEY,
+            theme: document.body.classList.contains('light-mode') ? 'light' : 'dark'
+        });
+    }
+
+    function getHCaptchaToken() {
+        if (hcaptchaWidgetId === null || !window.hcaptcha) return null;
+        return window.hcaptcha.getResponse(hcaptchaWidgetId);
+    }
+
+    function resetHCaptcha() {
+        if (hcaptchaWidgetId === null || !window.hcaptcha) return;
+        window.hcaptcha.reset(hcaptchaWidgetId);
+    }
 
     function isValidEmail(email) {
         var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -400,16 +426,29 @@ const App = (function() {
             return;
         }
 
+        // Get captcha token if HCaptcha is enabled
+        let captchaToken = null;
+        if (Config.HCAPTCHA_SITE_KEY) {
+            captchaToken = getHCaptchaToken();
+            if (!captchaToken) {
+                showToast('Please complete the captcha');
+                return;
+            }
+        }
+
         try {
-            await Auth.sendOtp(email);
+            await Auth.sendOtp(email, captchaToken);
             pendingOtpEmail = email;
             document.getElementById('sent-email').textContent = email;
             showAuthView('otp');
             document.getElementById('otp-code').focus();
             showToast('Code sent');
+            // Reset captcha for next use
+            resetHCaptcha();
         } catch (error) {
             console.error('OTP send error:', error);
             showToast('Failed to send code');
+            resetHCaptcha();
         }
     }
 
@@ -438,6 +477,22 @@ const App = (function() {
         } catch (error) {
             console.error('Google sign in error:', error);
             showToast('Failed to sign in with Google');
+        }
+    }
+
+    async function handleWalletSignIn() {
+        try {
+            await Auth.signInWithWallet();
+            showToast('Signed in with wallet');
+        } catch (error) {
+            console.error('Wallet sign in error:', error);
+            if (error.message.includes('No wallet detected')) {
+                showToast('No wallet found. Install MetaMask.');
+            } else if (error.code === 4001) {
+                showToast('Sign-in cancelled');
+            } else {
+                showToast('Failed to sign in with wallet');
+            }
         }
     }
 
@@ -521,7 +576,14 @@ const App = (function() {
 
         const emailEl = document.getElementById('account-email');
         if (emailEl) {
-            emailEl.textContent = user.email;
+            // Check if user signed in with wallet
+            const walletAddress = user.user_metadata?.wallet_address;
+            if (walletAddress) {
+                // Show truncated wallet address: 0x1234...5678
+                emailEl.textContent = walletAddress.slice(0, 6) + '...' + walletAddress.slice(-4);
+            } else {
+                emailEl.textContent = user.email;
+            }
         }
 
         const syncedCountEl = document.getElementById('tasks-synced');
@@ -1329,6 +1391,7 @@ const App = (function() {
             }
         });
         document.getElementById('google-signin').addEventListener('click', handleGoogleSignIn);
+        document.getElementById('wallet-signin').addEventListener('click', handleWalletSignIn);
         document.getElementById('otp-verify-form').addEventListener('submit', handleOtpVerifySubmit);
         document.getElementById('otp-code').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
@@ -1432,8 +1495,13 @@ const App = (function() {
 
             // Add modal keyboard navigation
             if (!addModal.classList.contains('hidden')) {
-                // Don't intercept when typing in input
-                if (document.activeElement === taskInput && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') {
+                // Don't intercept when typing in input (check both DOM focus and focus area)
+                if ((document.activeElement === taskInput || addFocusArea === 'input') &&
+                    e.key !== 'ArrowUp' && e.key !== 'ArrowDown' && e.key !== 'Escape') {
+                    // Ensure input has actual focus for typing
+                    if (document.activeElement !== taskInput) {
+                        taskInput.focus();
+                    }
                     return;
                 }
 
@@ -2286,10 +2354,11 @@ const App = (function() {
     // Add Modal
     function openAddModal() {
         addModal.classList.remove('hidden');
-        // Reset focus to category
-        addFocusArea = 'category';
-        addCategory.dataset.focused = 'true';
-        taskInput.classList.remove('focused');
+        // Focus the text input
+        addFocusArea = 'input';
+        addCategory.dataset.focused = 'false';
+        taskInput.classList.add('focused');
+        taskInput.focus();
         addTime.dataset.focused = 'false';
         const addBtnEl = taskForm.querySelector('.btn-add');
         if (addBtnEl) addBtnEl.classList.remove('focused');

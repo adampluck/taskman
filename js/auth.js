@@ -29,15 +29,22 @@ const Auth = (function() {
         }
     }
 
-    async function sendOtp(email) {
+    async function sendOtp(email, captchaToken) {
         const client = getSupabase();
         if (!client) throw new Error('Supabase not configured');
 
+        const options = {
+            shouldCreateUser: true
+        };
+
+        // Add captcha token if provided
+        if (captchaToken) {
+            options.captchaToken = captchaToken;
+        }
+
         const { error } = await client.auth.signInWithOtp({
             email: email,
-            options: {
-                shouldCreateUser: true
-            }
+            options: options
         });
 
         if (error) throw error;
@@ -102,6 +109,100 @@ const Auth = (function() {
         if (error) throw error;
     }
 
+    function isWalletAvailable() {
+        return typeof window.ethereum !== 'undefined';
+    }
+
+    async function signInWithWallet() {
+        const client = getSupabase();
+        if (!client) throw new Error('Supabase not configured');
+
+        if (!isWalletAvailable()) {
+            throw new Error('No wallet detected. Please install MetaMask or another Web3 wallet.');
+        }
+
+        // Request wallet connection
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const accounts = await provider.send('eth_requestAccounts', []);
+        const address = accounts[0];
+        const signer = provider.getSigner();
+
+        // Get nonce from server
+        const nonceResponse = await fetch(
+            Config.SUPABASE_URL + '/functions/v1/siwe-nonce',
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + Config.SUPABASE_ANON_KEY,
+                    'apikey': Config.SUPABASE_ANON_KEY,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ address: address })
+            }
+        );
+
+        if (!nonceResponse.ok) {
+            throw new Error('Failed to get nonce');
+        }
+
+        const { nonce } = await nonceResponse.json();
+
+        // Create SIWE message
+        const domain = window.location.host;
+        const origin = window.location.origin;
+        const statement = 'Sign in to Taskman with your Ethereum wallet.';
+        const issuedAt = new Date().toISOString();
+
+        const message = [
+            domain + ' wants you to sign in with your Ethereum account:',
+            address,
+            '',
+            statement,
+            '',
+            'URI: ' + origin,
+            'Version: 1',
+            'Chain ID: 1',
+            'Nonce: ' + nonce,
+            'Issued At: ' + issuedAt
+        ].join('\n');
+
+        // Sign the message
+        const signature = await signer.signMessage(message);
+
+        // Verify signature and get session
+        const verifyResponse = await fetch(
+            Config.SUPABASE_URL + '/functions/v1/siwe-verify',
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + Config.SUPABASE_ANON_KEY,
+                    'apikey': Config.SUPABASE_ANON_KEY,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: message,
+                    signature: signature,
+                    address: address
+                })
+            }
+        );
+
+        if (!verifyResponse.ok) {
+            const error = await verifyResponse.json();
+            throw new Error(error.error || 'Failed to verify signature');
+        }
+
+        const { token_hash } = await verifyResponse.json();
+
+        // Use the token hash to verify and create session
+        const { error } = await client.auth.verifyOtp({
+            token_hash: token_hash,
+            type: 'magiclink'
+        });
+
+        if (error) throw error;
+    }
+
     async function signOut() {
         const client = getSupabase();
         if (!client) return;
@@ -151,6 +252,8 @@ const Auth = (function() {
         sendOtp: sendOtp,
         verifyOtp: verifyOtp,
         signInWithGoogle: signInWithGoogle,
+        signInWithWallet: signInWithWallet,
+        isWalletAvailable: isWalletAvailable,
         signOut: signOut,
         onAuthStateChange: onAuthStateChange,
         getUser: getUser,

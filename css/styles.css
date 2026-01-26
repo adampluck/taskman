@@ -186,7 +186,7 @@ body.light-mode .wheel-item:hover {
 
 body.light-mode .wheel-item.active {
     color: #111;
-    border-color: #ddd;
+    border-color: #111;
     background: #fff;
 }
 
@@ -567,7 +567,7 @@ body.rainbow-mode .wheel-item:hover {
 
 body.rainbow-mode .wheel-item.active {
     color: var(--rainbow-fg);
-    border-color: var(--rainbow-border);
+    border-color: var(--rainbow-fg);
     background: var(--rainbow-surface);
 }
 
@@ -945,7 +945,7 @@ body.rainbow-mode .btn-add.focused {
 
 .wheel-item.active {
     color: #fff;
-    border-color: #333;
+    border-color: #555;
     background: #111;
 }
 
@@ -992,7 +992,7 @@ body.rainbow-mode .btn-add.focused {
 }
 
 .time-chip.selected {
-    border-color: #fff;
+    border-color: #555;
     color: #fff;
     background: #222;
 }
@@ -1533,7 +1533,7 @@ body.rainbow-mode .modal-close.focused {
 
 .task-input:focus {
     outline: none;
-    border-color: #fff;
+    border-color: #555;
 }
 
 .task-input,
@@ -1585,7 +1585,7 @@ body.rainbow-mode .modal-close.focused {
 
 
 .task-input.focused {
-    border-color: #fff;
+    border-color: #555;
 }
 
 .add-time-toggle-wrap[data-enabled="true"] .toggle-switch {
@@ -2263,6 +2263,33 @@ body.light-mode .auth-divider::after {
     flex-shrink: 0;
 }
 
+.btn-wallet {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px;
+    margin-top: 10px;
+    background: linear-gradient(135deg, #627EEA 0%, #8B5CF6 100%);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s, box-shadow 0.15s;
+}
+
+.btn-wallet:hover {
+    opacity: 0.9;
+    box-shadow: 0 2px 8px rgba(98, 126, 234, 0.4);
+}
+
+.btn-wallet svg {
+    flex-shrink: 0;
+}
+
 .btn-passkey {
     width: 100%;
     display: flex;
@@ -2317,6 +2344,16 @@ body.light-mode .btn-passkey:hover {
     color: #888;
     font-size: 0.9375rem;
     margin-bottom: 8px;
+}
+
+.hcaptcha-container {
+    display: flex;
+    justify-content: center;
+    margin: 16px 0;
+}
+
+.hcaptcha-container:empty {
+    display: none;
 }
 
 .auth-stats {
