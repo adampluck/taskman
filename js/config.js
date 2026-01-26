@@ -6,6 +6,9 @@ const Config = {
     // HCaptcha - get your site key from https://dashboard.hcaptcha.com
     HCAPTCHA_SITE_KEY: '4238aadc-8170-4d34-bcce-e2aa7de66e0e',  // Leave empty to disable captcha
 
+    // Reown AppKit - get your project ID from https://dashboard.reown.com
+    REOWN_PROJECT_ID: '28f88d4dea4c8906b556dbd26b679d9c',  // Required for WalletConnect mobile support
+
     // Sync settings
     SYNC_DEBOUNCE_MS: 2000,
     SYNC_RETRY_DELAY_MS: 5000,

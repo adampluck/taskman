@@ -2271,6 +2271,7 @@ body.light-mode .auth-divider::after {
     gap: 10px;
     padding: 14px;
     margin-top: 10px;
+    margin-bottom: 4px;
     background: linear-gradient(135deg, #627EEA 0%, #8B5CF6 100%);
     border: none;
     border-radius: 8px;

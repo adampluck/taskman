@@ -110,97 +110,133 @@ const Auth = (function() {
     }
 
     function isWalletAvailable() {
-        return typeof window.ethereum !== 'undefined';
+        // AppKit supports all wallets via WalletConnect, always available if configured
+        return !!Config.REOWN_PROJECT_ID;
     }
 
     async function signInWithWallet() {
         const client = getSupabase();
         if (!client) throw new Error('Supabase not configured');
 
-        if (!isWalletAvailable()) {
-            throw new Error('No wallet detected. Please install MetaMask or another Web3 wallet.');
+        if (!window.WalletKit) {
+            throw new Error('Wallet module not loaded');
         }
 
-        // Request wallet connection
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const accounts = await provider.send('eth_requestAccounts', []);
-        const address = accounts[0];
-        const signer = provider.getSigner();
-
-        // Get nonce from server
-        const nonceResponse = await fetch(
-            Config.SUPABASE_URL + '/functions/v1/siwe-nonce',
-            {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + Config.SUPABASE_ANON_KEY,
-                    'apikey': Config.SUPABASE_ANON_KEY,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ address: address })
-            }
-        );
-
-        if (!nonceResponse.ok) {
-            throw new Error('Failed to get nonce');
+        // Initialize wallet if not already done
+        const modal = window.WalletKit.getModal() || window.WalletKit.initWallet(Config.REOWN_PROJECT_ID);
+        if (!modal) {
+            throw new Error('WalletConnect not configured. Please set REOWN_PROJECT_ID in config.');
         }
 
-        const { nonce } = await nonceResponse.json();
+        // Open the wallet modal and wait for connection
+        return new Promise(function(resolve, reject) {
+            let unsubscribe = null;
+            let resolved = false;
 
-        // Create SIWE message
-        const domain = window.location.host;
-        const origin = window.location.origin;
-        const statement = 'Sign in to Taskman with your Ethereum wallet.';
-        const issuedAt = new Date().toISOString();
+            // Subscribe to state changes to detect connection
+            unsubscribe = modal.subscribeState(async function(state) {
+                if (resolved) return;
 
-        const message = [
-            domain + ' wants you to sign in with your Ethereum account:',
-            address,
-            '',
-            statement,
-            '',
-            'URI: ' + origin,
-            'Version: 1',
-            'Chain ID: 1',
-            'Nonce: ' + nonce,
-            'Issued At: ' + issuedAt
-        ].join('\n');
+                if (state.address && state.selectedNetworkId) {
+                    resolved = true;
+                    if (unsubscribe) unsubscribe();
 
-        // Sign the message
-        const signature = await signer.signMessage(message);
+                    try {
+                        // Get the provider from AppKit
+                        const provider = modal.getWalletProvider();
+                        if (!provider) {
+                            throw new Error('No wallet provider available');
+                        }
 
-        // Verify signature and get session
-        const verifyResponse = await fetch(
-            Config.SUPABASE_URL + '/functions/v1/siwe-verify',
-            {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + Config.SUPABASE_ANON_KEY,
-                    'apikey': Config.SUPABASE_ANON_KEY,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    message: message,
-                    signature: signature,
-                    address: address
-                })
-            }
-        );
+                        const address = state.address;
 
-        if (!verifyResponse.ok) {
-            const error = await verifyResponse.json();
-            throw new Error(error.error || 'Failed to verify signature');
-        }
+                        // Get nonce from server
+                        const nonceResponse = await fetch(
+                            Config.SUPABASE_URL + '/functions/v1/siwe-nonce',
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': 'Bearer ' + Config.SUPABASE_ANON_KEY,
+                                    'apikey': Config.SUPABASE_ANON_KEY,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ address: address })
+                            }
+                        );
 
-        const { token_hash } = await verifyResponse.json();
+                        if (!nonceResponse.ok) {
+                            throw new Error('Failed to get nonce');
+                        }
 
-        // Use the token hash to verify and create session
-        const { error } = await client.auth.verifyOtp({
-            token_hash: token_hash,
-            type: 'magiclink'
+                        const { nonce } = await nonceResponse.json();
+
+                        // Create SIWE message
+                        const domain = window.location.host;
+                        const origin = window.location.origin;
+                        const statement = 'Sign in to Taskman with your Ethereum wallet.';
+                        const issuedAt = new Date().toISOString();
+
+                        const message = [
+                            domain + ' wants you to sign in with your Ethereum account:',
+                            address,
+                            '',
+                            statement,
+                            '',
+                            'URI: ' + origin,
+                            'Version: 1',
+                            'Chain ID: 1',
+                            'Nonce: ' + nonce,
+                            'Issued At: ' + issuedAt
+                        ].join('\n');
+
+                        // Sign the message using the provider
+                        const signature = await provider.request({
+                            method: 'personal_sign',
+                            params: [message, address]
+                        });
+
+                        // Verify signature and get session
+                        const verifyResponse = await fetch(
+                            Config.SUPABASE_URL + '/functions/v1/siwe-verify',
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': 'Bearer ' + Config.SUPABASE_ANON_KEY,
+                                    'apikey': Config.SUPABASE_ANON_KEY,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    message: message,
+                                    signature: signature,
+                                    address: address
+                                })
+                            }
+                        );
+
+                        if (!verifyResponse.ok) {
+                            const error = await verifyResponse.json();
+                            throw new Error(error.error || 'Failed to verify signature');
+                        }
+
+                        const { token_hash } = await verifyResponse.json();
+
+                        // Use the token hash to verify and create session
+                        const { error } = await client.auth.verifyOtp({
+                            token_hash: token_hash,
+                            type: 'magiclink'
+                        });
+
+                        if (error) throw error;
+                        resolve();
+                    } catch (err) {
+                        reject(err);
+                    }
+                }
+            });
+
+            // Open the modal
+            modal.open();
         });
-
-        if (error) throw error;
     }
 
     async function signOut() {
