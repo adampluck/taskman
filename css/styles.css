@@ -2071,7 +2071,7 @@ body.rainbow-mode .manage-item-btn.focused.delete {
 /* Auth Floating Button */
 .auth-float {
     top: 32px;
-    left: 32px;
+    left: 24px;
     bottom: auto;
 }
 
