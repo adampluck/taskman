@@ -2314,6 +2314,14 @@ body.light-mode .btn-email.focused {
     outline-color: #333;
 }
 
+/* Email modal - position higher on mobile for keyboard */
+@media (max-width: 600px) {
+    #email-modal {
+        align-items: flex-start;
+        padding-top: 15vh;
+    }
+}
+
 .btn-passkey {
     width: 100%;
     display: flex;
