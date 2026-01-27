@@ -1,7 +1,17 @@
 const Config = {
-    // Replace with your Supabase project credentials
-    SUPABASE_URL: 'YOUR_SUPABASE_URL',
-    SUPABASE_ANON_KEY: 'YOUR_SUPABASE_ANON_KEY',
+    // Supabase credentials (publishable keys - safe to commit)
+    // Get from: https://supabase.com/dashboard/project/YOUR_PROJECT/settings/api
+    SUPABASE_URL: 'https://your-project.supabase.co',
+    SUPABASE_ANON_KEY: 'your-anon-key',
+
+    // HCaptcha site key (public - safe to commit)
+    // Get from: https://dashboard.hcaptcha.com
+    HCAPTCHA_SITE_KEY: '',  // Leave empty to disable captcha
+
+    // Voice input token endpoint
+    // Local development: '/api/assemblyai-token' (requires server.js + .env)
+    // Production: Your Cloudflare Worker URL (see worker/assemblyai-token.js)
+    VOICE_TOKEN_ENDPOINT: '/api/assemblyai-token',
 
     // Sync settings
     SYNC_DEBOUNCE_MS: 2000,

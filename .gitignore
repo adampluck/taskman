@@ -3,3 +3,6 @@
 supabase/.temp/
 node_modules/
 dist/
+
+# Local environment (contains AssemblyAI API key)
+.env

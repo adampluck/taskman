@@ -162,14 +162,34 @@
                             <span class="wheel-label">Other</span>
                         </button>
                     </div>
-                    <input
-                        type="text"
-                        id="task-input"
-                        class="task-input"
-                        placeholder="What needs doing?"
-                        required
-                        autocomplete="off"
-                    >
+                    <div class="task-input-row">
+                        <input
+                            type="text"
+                            id="task-input"
+                            class="task-input"
+                            placeholder="What needs doing?"
+                            required
+                            autocomplete="off"
+                        >
+                        <button type="button" id="voice-btn" class="voice-btn" title="Voice input">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                                <line x1="12" y1="19" x2="12" y2="23"/>
+                                <line x1="8" y1="23" x2="16" y2="23"/>
+                            </svg>
+                        </button>
+                        <button type="button" id="voice-bulk-btn" class="voice-btn" title="Voice list - add multiple tasks">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                                <line x1="12" y1="19" x2="12" y2="23"/>
+                                <line x1="8" y1="23" x2="16" y2="23"/>
+                                <line x1="19" y1="3" x2="19" y2="9"/>
+                                <line x1="16" y1="6" x2="22" y2="6"/>
+                            </svg>
+                        </button>
+                    </div>
                     <div class="time-options-wrap" id="add-time" data-value="15">
                         <button type="button" class="time-chip" data-value="0">∞</button>
                         <button type="button" class="time-chip selected" data-value="15">15m</button>
@@ -431,6 +451,34 @@
         </div>
     </div>
 
+    <!-- Voice Input Modal -->
+    <div id="voice-modal" class="modal hidden">
+        <div class="modal-content voice-modal-content">
+            <button id="close-voice-modal" class="modal-close">&times;</button>
+            <h2>Voice List</h2>
+            <p class="voice-instructions">Tap to record. Say tasks separated by "and", "then", or pauses.</p>
+
+            <button id="voice-record-btn" class="voice-record-btn">
+                <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+            </button>
+
+            <div id="voice-transcript" class="voice-transcript"></div>
+
+            <div id="voice-tasks-preview" class="voice-tasks-preview hidden">
+                <div class="voice-tasks-header">
+                    <h3>Extracted tasks:</h3>
+                    <button id="voice-add-all" class="btn-add-all">Add all</button>
+                </div>
+                <div id="voice-tasks-list" class="voice-tasks-list"></div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/config.js"></script>
     <script src="js/supabase.js"></script>
@@ -438,6 +486,7 @@
     <script src="js/sync.js"></script>
     <script src="js/payments.js"></script>
     <script src="js/storage.js"></script>
+    <script src="js/voice.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

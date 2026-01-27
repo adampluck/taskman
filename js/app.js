@@ -123,6 +123,398 @@ const App = (function() {
         });
     }
 
+    // Voice input state
+    let voiceMode = 'single'; // 'single' or 'bulk'
+    let voiceTasks = [];
+    let voiceTranscript = '';
+    let voiceFinalTranscripts = []; // Accumulated final transcripts
+    let voiceSilenceTimer = null; // Timer for auto-stop on silence
+
+    function initVoice() {
+        // Hide voice buttons if not supported
+        var voiceBtn = document.getElementById('voice-btn');
+        var voiceBulkBtn = document.getElementById('voice-bulk-btn');
+        if (!VoiceInput.isSupported()) {
+            if (voiceBtn) voiceBtn.classList.add('hidden');
+            if (voiceBulkBtn) voiceBulkBtn.classList.add('hidden');
+            return;
+        }
+
+        // Set up callbacks
+        VoiceInput.onStart(function() {
+            if (voiceMode === 'single') {
+                if (voiceBtn) voiceBtn.classList.add('listening');
+            } else {
+                var recordBtn = document.getElementById('voice-record-btn');
+                if (recordBtn) recordBtn.classList.add('listening');
+            }
+            playSound('open');
+            // Start silence detection timer
+            resetSilenceTimer();
+        });
+
+        VoiceInput.onEnd(function() {
+            var voiceBtn = document.getElementById('voice-btn');
+            if (voiceBtn) voiceBtn.classList.remove('listening');
+            var recordBtn = document.getElementById('voice-record-btn');
+            if (recordBtn) recordBtn.classList.remove('listening');
+            playSound('close');
+            clearSilenceTimer();
+
+            // In bulk mode, parse tasks when recording ends
+            if (voiceMode === 'bulk' && voiceTranscript) {
+                voiceTasks = TaskParser.parseTranscript(voiceTranscript);
+                renderVoiceTasks();
+            }
+        });
+
+        VoiceInput.onResult(function(transcript, isFinal) {
+            // Reset silence timer on any transcript
+            resetSilenceTimer();
+
+            if (voiceMode === 'single') {
+                // Single task mode - populate input field
+                taskInput.value = transcript;
+                // Auto-detect category
+                var detected = TaskParser.detectCategory(transcript);
+                if (detected !== 'other') {
+                    setAddCategory(detected);
+                }
+            } else {
+                // Check for stop phrases
+                if (isFinal && TaskParser.isStopPhrase(transcript)) {
+                    // Remove stop phrase from transcript before stopping
+                    voiceTranscript = TaskParser.removeStopPhrase(voiceTranscript);
+                    clearSilenceTimer();
+                    VoiceInput.stop();
+                    return;
+                }
+
+                // Bulk mode - accumulate transcripts
+                if (isFinal && transcript) {
+                    voiceFinalTranscripts.push(transcript);
+                }
+
+                // Build full transcript: all finals + current partial
+                var fullTranscript = voiceFinalTranscripts.join('. ');
+                if (!isFinal && transcript) {
+                    fullTranscript = fullTranscript + (fullTranscript ? '. ' : '') + transcript;
+                }
+
+                voiceTranscript = fullTranscript;
+                var transcriptEl = document.getElementById('voice-transcript');
+                if (transcriptEl) {
+                    transcriptEl.textContent = fullTranscript;
+                    transcriptEl.classList.toggle('has-text', fullTranscript.length > 0);
+                }
+            }
+        });
+
+        VoiceInput.onError(function(error) {
+            var voiceBtn = document.getElementById('voice-btn');
+            if (voiceBtn) voiceBtn.classList.remove('listening');
+            var recordBtn = document.getElementById('voice-record-btn');
+            if (recordBtn) recordBtn.classList.remove('listening');
+
+            if (error === 'not-allowed') {
+                showToast('Microphone access denied');
+            } else if (error === 'no-microphone') {
+                showToast('No microphone found');
+            } else if (error === 'no-api-key') {
+                showToast('Add AssemblyAI key in config.js');
+            } else if (error === 'connection-error') {
+                showToast('Connection error - check internet');
+            } else if (error === 'not-supported') {
+                showToast('Voice not supported in this browser');
+            } else if (error === 'token-error') {
+                showToast('Invalid API key');
+            } else if (error === 'transcription-error') {
+                showToast('Transcription failed');
+            } else if (error === 'start-error') {
+                showToast('Could not start voice input');
+            } else {
+                console.log('Voice error:', error);
+                showToast('Voice error');
+            }
+        });
+
+        // Bind voice button in add modal
+        if (voiceBtn) {
+            voiceBtn.addEventListener('click', function() {
+                voiceMode = 'single';
+                VoiceInput.toggle();
+            });
+
+            // Long press to open bulk mode
+            var pressTimer = null;
+            voiceBtn.addEventListener('mousedown', function() {
+                pressTimer = setTimeout(function() {
+                    openVoiceModal();
+                }, 500);
+            });
+            voiceBtn.addEventListener('mouseup', function() {
+                clearTimeout(pressTimer);
+            });
+            voiceBtn.addEventListener('mouseleave', function() {
+                clearTimeout(pressTimer);
+            });
+            voiceBtn.addEventListener('touchstart', function(e) {
+                pressTimer = setTimeout(function() {
+                    openVoiceModal();
+                    e.preventDefault();
+                }, 500);
+            }, { passive: false });
+            voiceBtn.addEventListener('touchend', function() {
+                clearTimeout(pressTimer);
+            });
+        }
+
+        // Bind bulk voice button
+        var voiceBulkBtn = document.getElementById('voice-bulk-btn');
+        if (voiceBulkBtn) {
+            voiceBulkBtn.addEventListener('click', function() {
+                openVoiceModal();
+            });
+        }
+
+        // Bind voice modal elements
+        var closeVoiceModalBtn = document.getElementById('close-voice-modal');
+        if (closeVoiceModalBtn) {
+            closeVoiceModalBtn.addEventListener('click', closeVoiceModal);
+        }
+
+        var voiceRecordBtn = document.getElementById('voice-record-btn');
+        if (voiceRecordBtn) {
+            voiceRecordBtn.addEventListener('click', function() {
+                VoiceInput.toggle();
+            });
+        }
+
+        var voiceAddAllBtn = document.getElementById('voice-add-all');
+        if (voiceAddAllBtn) {
+            voiceAddAllBtn.addEventListener('click', addAllVoiceTasks);
+        }
+    }
+
+    function setAddCategory(category) {
+        var categories = ['work', 'personal', 'shopping', 'health', 'other'];
+        var index = categories.indexOf(category);
+        if (index === -1) return;
+
+        addCategory.dataset.value = category;
+        addCategory.dataset.index = index;
+
+        var wheelItems = addCategory.querySelectorAll('.wheel-item');
+        wheelItems.forEach(function(item, i) {
+            var offset = i - index;
+            if (offset > 2) offset -= categories.length;
+            if (offset < -2) offset += categories.length;
+            item.dataset.offset = offset;
+            item.classList.toggle('active', offset === 0);
+        });
+    }
+
+    function resetSilenceTimer() {
+        clearSilenceTimer();
+        voiceSilenceTimer = setTimeout(function() {
+            // Auto-stop after 2 seconds of silence
+            if (VoiceInput.isListening()) {
+                VoiceInput.stop();
+            }
+        }, 4000);
+    }
+
+    function clearSilenceTimer() {
+        if (voiceSilenceTimer) {
+            clearTimeout(voiceSilenceTimer);
+            voiceSilenceTimer = null;
+        }
+    }
+
+    function openVoiceModal() {
+        voiceMode = 'bulk';
+        voiceTranscript = '';
+        voiceFinalTranscripts = [];
+        voiceTasks = [];
+
+        var voiceModal = document.getElementById('voice-modal');
+        if (voiceModal) {
+            voiceModal.classList.remove('hidden');
+            playSound('open');
+        }
+
+        // Reset UI
+        var transcriptEl = document.getElementById('voice-transcript');
+        if (transcriptEl) {
+            transcriptEl.textContent = '';
+            transcriptEl.classList.remove('has-text');
+        }
+
+        var previewEl = document.getElementById('voice-tasks-preview');
+        if (previewEl) previewEl.classList.add('hidden');
+
+        var tasksList = document.getElementById('voice-tasks-list');
+        if (tasksList) tasksList.innerHTML = '';
+
+        // Close add modal if open
+        closeAddModal();
+    }
+
+    function closeVoiceModal() {
+        VoiceInput.stop();
+
+        var voiceModal = document.getElementById('voice-modal');
+        if (voiceModal) {
+            voiceModal.classList.add('hidden');
+            playSound('close');
+        }
+
+        voiceMode = 'single';
+        voiceTranscript = '';
+        voiceTasks = [];
+    }
+
+    function renderVoiceTasks() {
+        var listEl = document.getElementById('voice-tasks-list');
+        var previewEl = document.getElementById('voice-tasks-preview');
+
+        if (!listEl || !previewEl) return;
+
+        if (voiceTasks.length === 0) {
+            previewEl.classList.add('hidden');
+            return;
+        }
+
+        previewEl.classList.remove('hidden');
+
+        listEl.innerHTML = voiceTasks.map(function(task, index) {
+            return '<div class="voice-task-item" data-index="' + index + '">' +
+                '<input type="text" class="voice-task-title" data-index="' + index + '" value="' + escapeHtml(task.title) + '">' +
+                '<select class="voice-task-category" data-index="' + index + '">' +
+                    '<option value="work"' + (task.category === 'work' ? ' selected' : '') + '>Work</option>' +
+                    '<option value="personal"' + (task.category === 'personal' ? ' selected' : '') + '>Personal</option>' +
+                    '<option value="shopping"' + (task.category === 'shopping' ? ' selected' : '') + '>Shopping</option>' +
+                    '<option value="health"' + (task.category === 'health' ? ' selected' : '') + '>Health</option>' +
+                    '<option value="other"' + (task.category === 'other' ? ' selected' : '') + '>Other</option>' +
+                '</select>' +
+                '<select class="voice-task-time" data-index="' + index + '">' +
+                    '<option value="0"' + (task.timeEstimate === 0 ? ' selected' : '') + '>&infin;</option>' +
+                    '<option value="15"' + (task.timeEstimate === 15 ? ' selected' : '') + '>15m</option>' +
+                    '<option value="30"' + (task.timeEstimate === 30 ? ' selected' : '') + '>30m</option>' +
+                    '<option value="60"' + (task.timeEstimate === 60 ? ' selected' : '') + '>1h</option>' +
+                    '<option value="120"' + (task.timeEstimate === 120 ? ' selected' : '') + '>2h</option>' +
+                '</select>' +
+                '<button type="button" class="voice-task-add" data-index="' + index + '" title="Add this task">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                        '<line x1="12" y1="5" x2="12" y2="19"/>' +
+                        '<line x1="5" y1="12" x2="19" y2="12"/>' +
+                    '</svg>' +
+                '</button>' +
+                '<button type="button" class="voice-task-delete" data-index="' + index + '" title="Remove">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                        '<line x1="18" y1="6" x2="6" y2="18"/>' +
+                        '<line x1="6" y1="6" x2="18" y2="18"/>' +
+                    '</svg>' +
+                '</button>' +
+            '</div>';
+        }).join('');
+
+        // Bind events for the rendered items
+        listEl.querySelectorAll('.voice-task-title').forEach(function(input) {
+            input.addEventListener('input', function() {
+                var idx = parseInt(this.dataset.index, 10);
+                if (voiceTasks[idx]) {
+                    voiceTasks[idx].title = this.value;
+                }
+            });
+        });
+
+        listEl.querySelectorAll('.voice-task-category').forEach(function(select) {
+            select.addEventListener('change', function() {
+                var idx = parseInt(this.dataset.index, 10);
+                if (voiceTasks[idx]) {
+                    voiceTasks[idx].category = this.value;
+                }
+            });
+        });
+
+        listEl.querySelectorAll('.voice-task-time').forEach(function(select) {
+            select.addEventListener('change', function() {
+                var idx = parseInt(this.dataset.index, 10);
+                if (voiceTasks[idx]) {
+                    voiceTasks[idx].timeEstimate = parseInt(this.value, 10);
+                }
+            });
+        });
+
+        listEl.querySelectorAll('.voice-task-add').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var idx = parseInt(this.dataset.index, 10);
+                if (voiceTasks[idx]) {
+                    addSingleVoiceTask(idx);
+                }
+            });
+        });
+
+        listEl.querySelectorAll('.voice-task-delete').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var idx = parseInt(this.dataset.index, 10);
+                voiceTasks.splice(idx, 1);
+                renderVoiceTasks();
+                playSound('delete');
+            });
+        });
+    }
+
+    function addSingleVoiceTask(index) {
+        var task = voiceTasks[index];
+        if (!task) return;
+
+        TaskStorage.saveTask({
+            title: task.title,
+            category: task.category,
+            timeEstimate: task.timeEstimate
+        });
+
+        showToast('Task added');
+        playSound('success');
+
+        // Remove from list and re-render
+        voiceTasks.splice(index, 1);
+        renderVoiceTasks();
+        updatePickButton();
+
+        // Close modal if no tasks left
+        if (voiceTasks.length === 0) {
+            closeVoiceModal();
+        }
+    }
+
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function addAllVoiceTasks() {
+        if (voiceTasks.length === 0) return;
+
+        voiceTasks.forEach(function(task) {
+            TaskStorage.saveTask({
+                title: task.title,
+                category: task.category,
+                timeEstimate: task.timeEstimate
+            });
+        });
+
+        var count = voiceTasks.length;
+        showToast(count + ' task' + (count > 1 ? 's' : '') + ' added');
+        playSound('success');
+
+        closeVoiceModal();
+        updatePickButton();
+    }
+
     function toggleSound() {
         soundEnabled = !soundEnabled;
         document.body.classList.toggle('sound-off', !soundEnabled);
@@ -265,6 +657,7 @@ const App = (function() {
         initSound();
         initAuth();
         initAnalytics();
+        initVoice();
     }
 
     // Auth Modal elements
