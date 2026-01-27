@@ -3132,6 +3132,15 @@ body.rainbow-mode .crypto-link:hover {
     border-color: #555;
 }
 
+.voice-record-btn:focus,
+.voice-record-btn.focused {
+    background: #333;
+    color: #fff;
+    border-color: #555;
+    outline: 2px solid #fff;
+    outline-offset: 4px;
+}
+
 .voice-record-btn.listening {
     background: #dc2626;
     border-color: #dc2626;

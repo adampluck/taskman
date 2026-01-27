@@ -288,12 +288,20 @@ const App = (function() {
             voiceRecordBtn.addEventListener('click', function() {
                 VoiceInput.toggle();
             });
+            voiceRecordBtn.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    VoiceInput.toggle();
+                }
+            });
         }
 
         var voiceAddAllBtn = document.getElementById('voice-add-all');
         if (voiceAddAllBtn) {
             voiceAddAllBtn.addEventListener('click', addAllVoiceTasks);
         }
+
     }
 
     function setAddCategory(category) {
@@ -358,6 +366,13 @@ const App = (function() {
 
         // Close add modal if open
         closeAddModal();
+
+        // Focus the record button for keyboard navigation
+        var recordBtn = document.getElementById('voice-record-btn');
+        if (recordBtn) {
+            recordBtn.classList.add('focused');
+            recordBtn.focus();
+        }
     }
 
     function closeVoiceModal() {
@@ -367,6 +382,12 @@ const App = (function() {
         if (voiceModal) {
             voiceModal.classList.add('hidden');
             playSound('close');
+        }
+
+        // Remove focused class from record button
+        var recordBtn = document.getElementById('voice-record-btn');
+        if (recordBtn) {
+            recordBtn.classList.remove('focused');
         }
 
         voiceMode = 'single';
@@ -1562,6 +1583,8 @@ const App = (function() {
             if (!addModal.classList.contains('hidden')) return;
             if (!manageModal.classList.contains('hidden')) return;
             if (!document.getElementById('signup-prompt').classList.contains('hidden')) return;
+            var voiceModal = document.getElementById('voice-modal');
+            if (voiceModal && !voiceModal.classList.contains('hidden')) return;
 
             var state = getTaskFocusedButton();
             if (state.btns.length === 0) return;
@@ -1836,6 +1859,18 @@ const App = (function() {
                 if (!document.getElementById('signup-prompt').classList.contains('hidden')) dismissSignupPrompt();
                 var paywallModal = document.getElementById('paywall-modal');
                 if (paywallModal && !paywallModal.classList.contains('hidden')) closePaywallModal();
+                var voiceModal = document.getElementById('voice-modal');
+                if (voiceModal && !voiceModal.classList.contains('hidden')) closeVoiceModal();
+                return;
+            }
+
+            // Voice modal - Enter to start/stop recording
+            var voiceModal = document.getElementById('voice-modal');
+            if (voiceModal && !voiceModal.classList.contains('hidden')) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    VoiceInput.toggle();
+                }
                 return;
             }
 
@@ -2338,6 +2373,9 @@ const App = (function() {
             if (e.key === 'Enter') {
                 // Skip if task view is handling this
                 if (!taskView.classList.contains('hidden')) return;
+                // Skip if voice modal is open
+                var voiceModal = document.getElementById('voice-modal');
+                if (voiceModal && !voiceModal.classList.contains('hidden')) return;
                 const focused = document.querySelector('.focused');
                 if (focused && focused.tagName === 'BUTTON') {
                     e.preventDefault();

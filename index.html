@@ -180,13 +180,15 @@
                             </svg>
                         </button>
                         <button type="button" id="voice-bulk-btn" class="voice-btn" title="Voice list - add multiple tasks">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <svg viewBox="0 0 34 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
                                 <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
                                 <line x1="12" y1="19" x2="12" y2="23"/>
                                 <line x1="8" y1="23" x2="16" y2="23"/>
-                                <line x1="19" y1="3" x2="19" y2="9"/>
-                                <line x1="16" y1="6" x2="22" y2="6"/>
+                                <line x1="22" y1="3" x2="22" y2="9"/>
+                                <line x1="19" y1="6" x2="25" y2="6"/>
+                                <line x1="31" y1="3" x2="31" y2="9"/>
+                                <line x1="28" y1="6" x2="34" y2="6"/>
                             </svg>
                         </button>
                     </div>
@@ -455,10 +457,10 @@
     <div id="voice-modal" class="modal hidden">
         <div class="modal-content voice-modal-content">
             <button id="close-voice-modal" class="modal-close">&times;</button>
-            <h2>Voice List</h2>
-            <p class="voice-instructions">Tap to record. Say tasks separated by "and", "then", or pauses.</p>
-
-            <button id="voice-record-btn" class="voice-record-btn">
+            <h2>Dictate your tasks</h2>
+            <p class="voice-instructions">Tap to record.</p>
+            <p class="voice-instructions">Say tasks separated by "and", "then", or pauses.</p>
+            <button id="voice-record-btn" class="voice-record-btn" tabindex="0">
                 <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
                     <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
@@ -471,7 +473,7 @@
 
             <div id="voice-tasks-preview" class="voice-tasks-preview hidden">
                 <div class="voice-tasks-header">
-                    <h3>Extracted tasks:</h3>
+                    <h3>Tasks to add:</h3>
                     <button id="voice-add-all" class="btn-add-all">Add all</button>
                 </div>
                 <div id="voice-tasks-list" class="voice-tasks-list"></div>
