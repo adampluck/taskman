@@ -87,6 +87,11 @@ const App = (function() {
     // Audio context for UI sounds
     let audioCtx = null;
     let soundEnabled = true;
+    let energyMode = false;
+
+    // Energy values map to time values: 0=15min, 1=30min, 2=60min, 3=120min
+    var energyToTime = [15, 30, 60, 120];
+    var timeToEnergy = { 15: 0, 30: 1, 60: 2, 120: 3 };
 
     function initSound() {
         const saved = localStorage.getItem('taskman-sound');
@@ -94,6 +99,168 @@ const App = (function() {
         if (!soundEnabled) {
             document.body.classList.add('sound-off');
         }
+    }
+
+    function initMode() {
+        const saved = localStorage.getItem('taskman-mode');
+        energyMode = saved === 'energy';
+        if (energyMode) {
+            document.body.classList.add('energy-mode');
+        }
+        initEnergySliders();
+        // Sync sliders with initial time values
+        syncEnergySliders();
+        updateTimeEnergyLabel();
+    }
+
+    function toggleMode() {
+        energyMode = !energyMode;
+        document.body.classList.toggle('energy-mode', energyMode);
+        localStorage.setItem('taskman-mode', energyMode ? 'energy' : 'time');
+        playSound('tick');
+
+        // Sync slider values with current time values
+        if (energyMode) {
+            syncEnergySliders();
+        }
+        updateTimeEnergyLabel();
+    }
+
+    function updateTimeEnergyLabel() {
+        var label = document.getElementById('add-time-energy-label');
+        if (label) {
+            var tasks = TaskStorage.getTasks();
+            if (tasks.length === 0) {
+                label.style.display = '';
+                label.textContent = energyMode ? 'Energy level needed' : 'Max time needed';
+            } else {
+                label.style.display = 'none';
+            }
+        }
+    }
+
+    function initEnergySliders() {
+        var sliders = document.querySelectorAll('.energy-slider');
+        sliders.forEach(function(slider) {
+            var wrap = slider.closest('.energy-slider-wrap');
+            if (!wrap) return;
+
+            // Mouse events
+            slider.addEventListener('mousedown', function(e) {
+                handleSliderStart(e, wrap);
+            });
+
+            // Touch events
+            slider.addEventListener('touchstart', function(e) {
+                handleSliderStart(e, wrap);
+            }, { passive: false });
+
+            // Keyboard events
+            slider.addEventListener('keydown', function(e) {
+                handleSliderKeydown(e, wrap);
+            });
+        });
+
+        // Global mouse/touch move and end
+        document.addEventListener('mousemove', handleSliderMove);
+        document.addEventListener('mouseup', handleSliderEnd);
+        document.addEventListener('touchmove', handleSliderMove, { passive: false });
+        document.addEventListener('touchend', handleSliderEnd);
+    }
+
+    var activeSlider = null;
+
+    function handleSliderStart(e, wrap) {
+        e.preventDefault();
+        activeSlider = wrap;
+        updateSliderFromEvent(e, wrap);
+        wrap.querySelector('.energy-slider').focus();
+    }
+
+    function handleSliderMove(e) {
+        if (!activeSlider) return;
+        e.preventDefault();
+        updateSliderFromEvent(e, activeSlider);
+    }
+
+    function handleSliderEnd() {
+        if (activeSlider) {
+            playSound('tick');
+        }
+        activeSlider = null;
+    }
+
+    function handleSliderKeydown(e, wrap) {
+        var currentValue = parseInt(wrap.dataset.value, 10) || 15;
+        var currentIndex = timeToEnergy[currentValue] || 0;
+        var newIndex = currentIndex;
+
+        if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            newIndex = Math.max(0, currentIndex - 1);
+        } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            newIndex = Math.min(3, currentIndex + 1);
+        } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            // Let up/down navigate to other areas - blur slider and let main handler take over
+            var slider = wrap.querySelector('.energy-slider');
+            if (slider) slider.blur();
+            return;
+        } else {
+            return;
+        }
+
+        if (newIndex !== currentIndex) {
+            setSliderValue(wrap, energyToTime[newIndex]);
+            playSound('tick');
+        }
+    }
+
+    function updateSliderFromEvent(e, wrap) {
+        var slider = wrap.querySelector('.energy-slider');
+        var rect = slider.getBoundingClientRect();
+        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        var percent = (clientX - rect.left) / rect.width;
+        percent = Math.max(0, Math.min(1, percent));
+
+        // Snap to 4 positions (0, 0.33, 0.66, 1)
+        var index = Math.round(percent * 3);
+        var timeValue = energyToTime[index];
+
+        setSliderValue(wrap, timeValue);
+    }
+
+    function setSliderValue(wrap, timeValue) {
+        var index = timeToEnergy[timeValue] || 0;
+        var percent = (index / 3) * 100;
+
+        wrap.dataset.value = timeValue;
+        var thumb = wrap.querySelector('.energy-thumb');
+        if (thumb) {
+            thumb.style.left = percent + '%';
+        }
+
+        // Update corresponding time options data-value
+        var timeWrap = wrap.previousElementSibling;
+        if (timeWrap && timeWrap.classList.contains('time-options-wrap')) {
+            timeWrap.dataset.value = timeValue;
+            // Update selected chip
+            var chips = timeWrap.querySelectorAll('.time-chip');
+            chips.forEach(function(chip) {
+                chip.classList.toggle('selected', parseInt(chip.dataset.value, 10) === timeValue);
+            });
+        }
+    }
+
+    function syncEnergySliders() {
+        // Sync energy sliders with current time option values
+        document.querySelectorAll('.energy-slider-wrap').forEach(function(wrap) {
+            var timeWrap = wrap.previousElementSibling;
+            if (timeWrap && timeWrap.classList.contains('time-options-wrap')) {
+                var timeValue = parseInt(timeWrap.dataset.value, 10) || 15;
+                setSliderValue(wrap, timeValue);
+            }
+        });
     }
 
     function initAnalytics() {
@@ -408,6 +575,26 @@ const App = (function() {
 
         previewEl.classList.remove('hidden');
 
+        // Build time/energy select based on current mode
+        function buildTimeEnergySelect(task, index) {
+            if (energyMode) {
+                var energyIndex = timeToEnergy[task.timeEstimate] || 0;
+                return '<select class="voice-task-energy" data-index="' + index + '">' +
+                    '<option value="15"' + (energyIndex === 0 ? ' selected' : '') + '>Low</option>' +
+                    '<option value="30"' + (energyIndex === 1 ? ' selected' : '') + '>Med-Low</option>' +
+                    '<option value="60"' + (energyIndex === 2 ? ' selected' : '') + '>Med-High</option>' +
+                    '<option value="120"' + (energyIndex === 3 ? ' selected' : '') + '>High</option>' +
+                '</select>';
+            } else {
+                return '<select class="voice-task-time" data-index="' + index + '">' +
+                    '<option value="15"' + (task.timeEstimate === 15 ? ' selected' : '') + '>15m</option>' +
+                    '<option value="30"' + (task.timeEstimate === 30 ? ' selected' : '') + '>30m</option>' +
+                    '<option value="60"' + (task.timeEstimate === 60 ? ' selected' : '') + '>1h</option>' +
+                    '<option value="120"' + (task.timeEstimate === 120 ? ' selected' : '') + '>2h</option>' +
+                '</select>';
+            }
+        }
+
         listEl.innerHTML = voiceTasks.map(function(task, index) {
             return '<div class="voice-task-item" data-index="' + index + '">' +
                 '<input type="text" class="voice-task-title" data-index="' + index + '" value="' + escapeHtml(task.title) + '">' +
@@ -418,13 +605,7 @@ const App = (function() {
                     '<option value="health"' + (task.category === 'health' ? ' selected' : '') + '>Health</option>' +
                     '<option value="other"' + (task.category === 'other' ? ' selected' : '') + '>Other</option>' +
                 '</select>' +
-                '<select class="voice-task-time" data-index="' + index + '">' +
-                    '<option value="0"' + (task.timeEstimate === 0 ? ' selected' : '') + '>&infin;</option>' +
-                    '<option value="15"' + (task.timeEstimate === 15 ? ' selected' : '') + '>15m</option>' +
-                    '<option value="30"' + (task.timeEstimate === 30 ? ' selected' : '') + '>30m</option>' +
-                    '<option value="60"' + (task.timeEstimate === 60 ? ' selected' : '') + '>1h</option>' +
-                    '<option value="120"' + (task.timeEstimate === 120 ? ' selected' : '') + '>2h</option>' +
-                '</select>' +
+                buildTimeEnergySelect(task, index) +
                 '<button type="button" class="voice-task-add" data-index="' + index + '" title="Add this task">' +
                     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
                         '<line x1="12" y1="5" x2="12" y2="19"/>' +
@@ -460,6 +641,15 @@ const App = (function() {
         });
 
         listEl.querySelectorAll('.voice-task-time').forEach(function(select) {
+            select.addEventListener('change', function() {
+                var idx = parseInt(this.dataset.index, 10);
+                if (voiceTasks[idx]) {
+                    voiceTasks[idx].timeEstimate = parseInt(this.value, 10);
+                }
+            });
+        });
+
+        listEl.querySelectorAll('.voice-task-energy').forEach(function(select) {
             select.addEventListener('change', function() {
                 var idx = parseInt(this.dataset.index, 10);
                 if (voiceTasks[idx]) {
@@ -676,6 +866,7 @@ const App = (function() {
         updatePickButton();
         initTheme();
         initSound();
+        initMode();
         initAuth();
         initAnalytics();
         initVoice();
@@ -1347,6 +1538,12 @@ const App = (function() {
             pickerTime.dataset.value = chip.dataset.value;
             playClick('scroll');
             updatePickButton();
+            // Sync energy slider
+            var energyWrap = document.getElementById('picker-energy');
+            if (energyWrap) {
+                var timeValue = parseInt(chip.dataset.value, 10) || 15;
+                setSliderValue(energyWrap, timeValue);
+            }
         });
 
         // Swipe on time options (main screen)
@@ -1366,22 +1563,32 @@ const App = (function() {
         // Keyboard navigation for main screen
         // Areas: null (no focus), 'header', 'category', 'time', 'button', 'footer'
         let focusArea = null; // Start with no focus indicator
-        let headerFocus = 0; // 0=auth, 1=theme, 2=sound
+        let headerFocus = 0; // 0=auth, 1=theme, 2=sound, 3=mode
         let footerFocus = 0; // 0=manage, 1=add
         const timeChips = Array.from(pickerTime.querySelectorAll('.time-chip'));
         const themeToggleBtn = document.getElementById('theme-toggle');
         const soundToggleBtn = document.getElementById('sound-toggle');
+        const modeToggleBtn = document.getElementById('mode-toggle');
 
         function updateFocusIndicators() {
             // Clear all focus states
             pickerCategory.dataset.focused = focusArea === 'category';
-            pickerTime.dataset.focused = focusArea === 'time';
+            pickerTime.dataset.focused = focusArea === 'time' && !energyMode;
             pickBtn.classList.toggle('focused', focusArea === 'button');
             authToggle.classList.toggle('focused', focusArea === 'header' && headerFocus === 0);
             themeToggleBtn.classList.toggle('focused', focusArea === 'header' && headerFocus === 1);
             soundToggleBtn.classList.toggle('focused', focusArea === 'header' && headerFocus === 2);
+            modeToggleBtn.classList.toggle('focused', focusArea === 'header' && headerFocus === 3);
             manageToggle.classList.toggle('focused', focusArea === 'footer' && footerFocus === 0);
             addToggle.classList.toggle('focused', focusArea === 'footer' && footerFocus === 1);
+
+            // Focus energy slider when in energy mode and time area is selected
+            var pickerEnergySlider = document.querySelector('#picker-energy .energy-slider');
+            if (focusArea === 'time' && energyMode && pickerEnergySlider) {
+                pickerEnergySlider.focus();
+            } else if (pickerEnergySlider && document.activeElement === pickerEnergySlider && focusArea !== 'time') {
+                pickerEnergySlider.blur();
+            }
         }
 
         function getSelectedTimeIndex() {
@@ -1425,6 +1632,11 @@ const App = (function() {
             headerFocus = 2;
             updateFocusIndicators();
         });
+        modeToggleBtn.addEventListener('mouseenter', function() {
+            focusArea = 'header';
+            headerFocus = 3;
+            updateFocusIndicators();
+        });
         manageToggle.addEventListener('mouseenter', function() {
             focusArea = 'footer';
             footerFocus = 0;
@@ -1441,6 +1653,8 @@ const App = (function() {
             if (promptView.classList.contains('hidden')) return;
             if (addModal && !addModal.classList.contains('hidden')) return;
             if (manageModal && !manageModal.classList.contains('hidden')) return;
+            // Let energy slider handle its own keyboard events
+            if (document.activeElement && document.activeElement.classList.contains('energy-slider')) return;
 
             if (e.key === 'ArrowUp') {
                 e.preventDefault();
@@ -1482,12 +1696,12 @@ const App = (function() {
                     const currentIndex = parseInt(pickerCategory.dataset.index, 10);
                     updateWheel(currentIndex - 1);
                     playClick('scroll');
-                } else if (focusArea === 'time') {
+                } else if (focusArea === 'time' && !energyMode) {
                     const idx = getSelectedTimeIndex();
                     selectTimeChip(idx - 1);
                     playClick('scroll');
                 } else if (focusArea === 'header') {
-                    headerFocus = headerFocus > 0 ? headerFocus - 1 : 2;
+                    headerFocus = headerFocus > 0 ? headerFocus - 1 : 3;
                     updateFocusIndicators();
                     playSound('tick');
                 } else if (focusArea === 'footer') {
@@ -1505,12 +1719,12 @@ const App = (function() {
                     const currentIndex = parseInt(pickerCategory.dataset.index, 10);
                     updateWheel(currentIndex + 1);
                     playClick('scroll');
-                } else if (focusArea === 'time') {
+                } else if (focusArea === 'time' && !energyMode) {
                     const idx = getSelectedTimeIndex();
                     selectTimeChip(idx + 1);
                     playClick('scroll');
                 } else if (focusArea === 'header') {
-                    headerFocus = headerFocus < 2 ? headerFocus + 1 : 0;
+                    headerFocus = headerFocus < 3 ? headerFocus + 1 : 0;
                     updateFocusIndicators();
                     playSound('tick');
                 } else if (focusArea === 'footer') {
@@ -1528,7 +1742,8 @@ const App = (function() {
                     playClick('select');
                     if (headerFocus === 0) authToggle.click();
                     else if (headerFocus === 1) themeToggleBtn.click();
-                    else soundToggleBtn.click();
+                    else if (headerFocus === 2) soundToggleBtn.click();
+                    else modeToggleBtn.click();
                 } else if (focusArea === 'footer') {
                     playClick('select');
                     if (footerFocus === 0) manageToggle.click();
@@ -1674,6 +1889,12 @@ const App = (function() {
             chip.classList.add('selected');
             addTime.dataset.value = chip.dataset.value;
             playClick('scroll');
+            // Sync energy slider
+            var energyWrap = document.getElementById('add-energy');
+            if (energyWrap) {
+                var timeValue = parseInt(chip.dataset.value, 10) || 15;
+                setSliderValue(energyWrap, timeValue);
+            }
         });
 
         // Swipe on time options (add modal)
@@ -1776,6 +1997,7 @@ const App = (function() {
         });
 
         manageList.addEventListener('click', handleManageAction);
+        manageList.addEventListener('change', handleManageChange);
         document.getElementById('delete-all-btn').addEventListener('click', deleteAllCompleted);
 
         // Theme toggle
@@ -1783,6 +2005,9 @@ const App = (function() {
 
         // Sound toggle
         document.getElementById('sound-toggle').addEventListener('click', toggleSound);
+
+        // Mode toggle (time/energy)
+        document.getElementById('mode-toggle').addEventListener('click', toggleMode);
 
         // Auth toggle and events
         document.getElementById('auth-toggle').addEventListener('click', openAuthModal);
@@ -2396,14 +2621,16 @@ const App = (function() {
         document.addEventListener('keydown', function(e) {
             if (e.key.startsWith('Arrow')) {
                 // Blur any focused element to remove native focus outline
-                if (document.activeElement && document.activeElement !== document.body) {
+                // But don't blur energy sliders - they need focus for keyboard control
+                if (document.activeElement && document.activeElement !== document.body &&
+                    !document.activeElement.classList.contains('energy-slider')) {
                     document.activeElement.blur();
                 }
             }
         }, { passive: true });
 
         // Clear focus when hovering over corner buttons
-        [authToggle, themeToggleBtn, soundToggleBtn, manageToggle, addToggle].forEach(function(btn) {
+        [authToggle, themeToggleBtn, soundToggleBtn, modeToggleBtn, manageToggle, addToggle].forEach(function(btn) {
             if (btn) {
                 btn.addEventListener('mouseenter', function() {
                     this.classList.remove('focused');
@@ -2493,9 +2720,9 @@ const App = (function() {
         // Show category icon
         taskCategoryIcon.innerHTML = categoryIcons[currentTask.category] || categoryIcons.other;
 
-        // Show time limit if applicable
+        // Show time/energy limit if applicable
         if (currentTask.timeEstimate > 0) {
-            taskTimeLimit.textContent = formatTime(currentTask.timeEstimate);
+            taskTimeLimit.textContent = formatTimeOrEnergy(currentTask.timeEstimate);
             timerLimit = currentTask.timeEstimate * 60; // Convert to seconds
             startBtn.classList.remove('hidden');
         } else {
@@ -2537,9 +2764,9 @@ const App = (function() {
         // Show category icon
         taskCategoryIcon.innerHTML = categoryIcons[currentTask.category] || categoryIcons.other;
 
-        // Show time limit if applicable
+        // Show time/energy limit if applicable
         if (currentTask.timeEstimate > 0) {
-            taskTimeLimit.textContent = formatTime(currentTask.timeEstimate);
+            taskTimeLimit.textContent = formatTimeOrEnergy(currentTask.timeEstimate);
             timerLimit = currentTask.timeEstimate * 60;
             startBtn.classList.remove('hidden');
         } else {
@@ -2816,6 +3043,7 @@ const App = (function() {
         });
 
         taskInput.value = '';
+        taskInput.focus();
         // Keep category selected for adding multiple tasks
 
         // Show toast
@@ -2824,6 +3052,7 @@ const App = (function() {
 
         // Update pick button state
         updatePickButton();
+        updateTimeEnergyLabel();
 
         // Show signup prompt after tasks added (if not logged in)
         if (typeof Auth === 'undefined' || !Auth.isAuthenticated()) {
@@ -2932,85 +3161,93 @@ const App = (function() {
         playSound('delete');
         renderManageList();
         updatePickButton();
+        updateTimeEnergyLabel();
     }
 
     function renderManageItem(task) {
-        return `
-            <div class="manage-item ${task.completed ? 'completed' : ''}" data-id="${task.id}">
-                <div class="manage-item-content">
-                    <div class="manage-item-title">${escapeHtml(task.title)}</div>
-                    <div class="manage-item-meta">${task.category} · ${formatTime(task.timeEstimate)}</div>
-                </div>
-                <div class="manage-item-actions">
-                    <button class="manage-item-btn open" title="Open">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polygon points="5 3 19 12 5 21 5 3"/>
-                        </svg>
-                    </button>
-                    <button class="manage-item-btn edit" title="Edit">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                    </button>
-                    <button class="manage-item-btn delete" title="Delete">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="3 6 5 6 21 6"/>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        `;
+        var categories = ['work', 'personal', 'shopping', 'health', 'other'];
+        var timeOptions = [15, 30, 60, 120];
+        var energyLabels = ['Low', 'Med-Low', 'Med-High', 'High'];
+        var timeLabels = ['15 min', '30 min', '1 hour', '2 hours'];
+
+        var categoryOptions = categories.map(function(cat) {
+            var selected = cat === task.category ? ' selected' : '';
+            return '<option value="' + cat + '"' + selected + '>' + cat.charAt(0).toUpperCase() + cat.slice(1) + '</option>';
+        }).join('');
+
+        var timeEnergyOptions = timeOptions.map(function(time, index) {
+            var selected = time === task.timeEstimate ? ' selected' : '';
+            var label = energyMode ? energyLabels[index] : timeLabels[index];
+            return '<option value="' + time + '"' + selected + '>' + label + '</option>';
+        }).join('');
+
+        return '<div class="manage-item ' + (task.completed ? 'completed' : '') + '" data-id="' + task.id + '">' +
+            '<div class="manage-item-content">' +
+                '<input type="text" class="manage-item-title" value="' + escapeHtml(task.title).replace(/"/g, '&quot;') + '">' +
+                '<div class="manage-item-selectors">' +
+                    '<select class="manage-select manage-cat-select">' + categoryOptions + '</select>' +
+                    '<select class="manage-select manage-time-select">' + timeEnergyOptions + '</select>' +
+                '</div>' +
+            '</div>' +
+            '<div class="manage-item-actions">' +
+                '<button class="manage-item-btn open" title="Open">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                        '<polygon points="5 3 19 12 5 21 5 3"/>' +
+                    '</svg>' +
+                '</button>' +
+                '<button class="manage-item-btn delete" title="Delete">' +
+                    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                        '<polyline points="3 6 5 6 21 6"/>' +
+                        '<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' +
+                    '</svg>' +
+                '</button>' +
+            '</div>' +
+        '</div>';
     }
 
     function handleManageAction(e) {
-        const btn = e.target.closest('.manage-item-btn');
-        if (!btn) return;
-
-        const item = btn.closest('.manage-item');
+        const item = e.target.closest('.manage-item');
+        if (!item) return;
         const taskId = item.dataset.id;
 
-        if (btn.classList.contains('open')) {
-            openTaskById(taskId);
-        } else if (btn.classList.contains('edit')) {
-            startEdit(item, taskId);
-        } else if (btn.classList.contains('delete')) {
-            deleteTaskById(taskId);
+        // Handle action buttons
+        const btn = e.target.closest('.manage-item-btn');
+        if (btn) {
+            if (btn.classList.contains('open')) {
+                openTaskById(taskId);
+            } else if (btn.classList.contains('delete')) {
+                deleteTaskById(taskId);
+            }
         }
     }
 
-    function startEdit(item, taskId) {
-        const titleEl = item.querySelector('.manage-item-title');
-        const currentTitle = titleEl.textContent;
+    function handleManageChange(e) {
+        const item = e.target.closest('.manage-item');
+        if (!item) return;
+        const taskId = item.dataset.id;
 
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'edit-input';
-        input.value = currentTitle;
-
-        titleEl.style.display = 'none';
-        titleEl.parentNode.insertBefore(input, titleEl);
-        input.focus();
-        input.select();
-
-        function saveEdit() {
-            const newTitle = input.value.trim();
-            if (newTitle && newTitle !== currentTitle) {
+        // Handle title change
+        if (e.target.classList.contains('manage-item-title')) {
+            const newTitle = e.target.value.trim();
+            if (newTitle) {
                 TaskStorage.updateTask(taskId, { title: newTitle });
             }
-            renderManageList();
+            return;
         }
 
-        input.addEventListener('blur', saveEdit);
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                saveEdit();
-            } else if (e.key === 'Escape') {
-                renderManageList();
-            }
-        });
+        // Handle category dropdown
+        if (e.target.classList.contains('manage-cat-select')) {
+            TaskStorage.updateTask(taskId, { category: e.target.value });
+            playSound('tick');
+            return;
+        }
+
+        // Handle time/energy dropdown
+        if (e.target.classList.contains('manage-time-select')) {
+            TaskStorage.updateTask(taskId, { timeEstimate: parseInt(e.target.value, 10) });
+            playSound('tick');
+            return;
+        }
     }
 
     function deleteTaskById(taskId) {
@@ -3018,6 +3255,7 @@ const App = (function() {
         playSound('delete');
         renderManageList();
         updatePickButton();
+        updateTimeEnergyLabel();
     }
 
     function formatTime(minutes) {
@@ -3025,6 +3263,16 @@ const App = (function() {
         if (minutes === 60) return '1 hour';
         if (minutes < 240) return (minutes / 60) + ' hours';
         return '4+ hours';
+    }
+
+    function formatTimeOrEnergy(minutes) {
+        if (energyMode) {
+            var energyLabels = ['Low energy', 'Med-Low energy', 'Med-High energy', 'High energy'];
+            var index = timeToEnergy[minutes];
+            if (index !== undefined) return energyLabels[index];
+            return energyLabels[0];
+        }
+        return formatTime(minutes);
     }
 
     function escapeHtml(text) {

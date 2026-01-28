@@ -290,12 +290,11 @@ const TaskParser = (function() {
                 const num = parseInt(match[1], 10);
                 if (!isNaN(num)) {
                     const minutes = num * multiplier;
-                    // Clamp to valid options: 15, 30, 60, 120, or 0 (unlimited)
+                    // Clamp to valid options: 15, 30, 60, 120
                     if (minutes <= 15) return 15;
                     if (minutes <= 30) return 30;
                     if (minutes <= 60) return 60;
-                    if (minutes <= 120) return 120;
-                    return 0; // Unlimited for very long tasks
+                    return 120; // Cap at 2 hours for longer tasks
                 }
             }
         }
@@ -321,20 +320,10 @@ const TaskParser = (function() {
     }
 
     function isValidTask(title) {
-        if (!title || title.length < 3) return false;
-
-        // Count actual words (not just contractions)
-        const words = title.split(/\s+/).filter(w => w.length > 0);
-        if (words.length < 2) {
-            // Single word - only valid if it's a substantial word (5+ chars, not a contraction)
-            const word = words[0] || '';
-            if (word.length < 5 || word.includes("'") || word.includes("'")) {
-                return false;
-            }
-        }
+        if (!title || title.length < 2) return false;
 
         // Filter out common noise phrases
-        const noisePhrases = ['that\'s', 'thats', 'it\'s', 'its', 'i\'m', 'im', 'and', 'the', 'a', 'an', 'oh', 'um', 'uh', 'like', 'so', 'yeah', 'yes', 'no', 'okay', 'ok'];
+        const noisePhrases = ['that\'s', 'thats', 'it\'s', 'its', 'i\'m', 'im', 'and', 'the', 'a', 'an', 'oh', 'um', 'uh', 'like', 'so', 'yeah', 'yes', 'no', 'okay', 'ok', 'i', 'to', 'do'];
         const lowerTitle = title.toLowerCase();
         if (noisePhrases.includes(lowerTitle)) return false;
 
