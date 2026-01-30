@@ -58,8 +58,6 @@ const App = (function() {
     let manageCategoryValue = 'all';
     let manageStatusValue = 'all';
     let addFocusArea = 'category'; // For add modal keyboard nav
-    let analyticsPeriod = 'daily';
-    let analyticsCategory = 'all';
 
     // Swipe detection helper
     function addSwipeListener(element, onSwipeLeft, onSwipeRight) {
@@ -263,32 +261,6 @@ const App = (function() {
         });
     }
 
-    function initAnalytics() {
-        // Period tabs
-        var periodTabs = document.querySelectorAll('.period-tab');
-        periodTabs.forEach(function(tab) {
-            tab.addEventListener('click', function() {
-                periodTabs.forEach(function(t) { t.classList.remove('selected'); });
-                tab.classList.add('selected');
-                analyticsPeriod = tab.dataset.period;
-                updateAnalyticsUI();
-                playSound('tick');
-            });
-        });
-
-        // Category filter
-        var categoryChips = document.querySelectorAll('#analytics-category .analytics-chip');
-        categoryChips.forEach(function(chip) {
-            chip.addEventListener('click', function() {
-                categoryChips.forEach(function(c) { c.classList.remove('selected'); });
-                chip.classList.add('selected');
-                analyticsCategory = chip.dataset.value;
-                document.getElementById('analytics-category').dataset.value = chip.dataset.value;
-                updateAnalyticsUI();
-                playSound('tick');
-            });
-        });
-    }
 
     // Voice input state
     let voiceMode = 'single'; // 'single' or 'bulk'
@@ -868,7 +840,6 @@ const App = (function() {
         initSound();
         initMode();
         initAuth();
-        initAnalytics();
         initVoice();
     }
 
@@ -1129,48 +1100,17 @@ const App = (function() {
         closeAuthModal();
     }
 
-    function calculateAnalytics(period, category) {
+    function getCompletedTaskCount() {
         var tasks = TaskStorage.getTasks();
-        var now = new Date();
-
-        // Filter by completion status
-        var completedTasks = tasks.filter(function(t) {
-            return t.completed && t.completedAt;
-        });
-
-        // Filter by time period
-        completedTasks = completedTasks.filter(function(t) {
-            var completedDate = new Date(t.completedAt);
-
-            if (period === 'daily') {
-                return completedDate.toDateString() === now.toDateString();
-            } else if (period === 'weekly') {
-                var weekAgo = new Date(now);
-                weekAgo.setDate(weekAgo.getDate() - 7);
-                return completedDate >= weekAgo;
-            } else if (period === 'monthly') {
-                var monthAgo = new Date(now);
-                monthAgo.setDate(monthAgo.getDate() - 30);
-                return completedDate >= monthAgo;
-            }
-            return true;
-        });
-
-        // Filter by category
-        if (category !== 'all') {
-            completedTasks = completedTasks.filter(function(t) {
-                return t.category === category;
-            });
-        }
-
-        return { completed: completedTasks.length };
+        return tasks.filter(function(t) {
+            return t.completed;
+        }).length;
     }
 
-    function updateAnalyticsUI() {
-        var stats = calculateAnalytics(analyticsPeriod, analyticsCategory);
-        var completedEl = document.getElementById('analytics-completed');
+    function updateCompletedCountUI() {
+        var completedEl = document.getElementById('tasks-completed-count');
         if (completedEl) {
-            completedEl.textContent = stats.completed;
+            completedEl.textContent = getCompletedTaskCount();
         }
     }
 
@@ -1203,8 +1143,8 @@ const App = (function() {
             }
         }
 
-        // Update analytics
-        updateAnalyticsUI();
+        // Update completed count
+        updateCompletedCountUI();
     }
 
     function formatRelativeTime(date) {
@@ -1355,6 +1295,29 @@ const App = (function() {
                 link.classList.add('hidden');
             } else {
                 link.classList.remove('hidden');
+            }
+        });
+
+        // Update displayed prices
+        updatePriceDisplays();
+    }
+
+    function updatePriceDisplays() {
+        var proPrice = Payments.formatPrice(Payments.getProPriceCents());
+        var cryptoPrice = Payments.formatPrice(Payments.getCryptoPriceCents());
+        var hasDiscount = Payments.hasCryptoDiscount();
+
+        // Update all pro price displays
+        document.querySelectorAll('.pro-price').forEach(function(el) {
+            el.textContent = proPrice;
+        });
+
+        // Update crypto link text with discount display
+        document.querySelectorAll('.crypto-price-text').forEach(function(el) {
+            if (hasDiscount) {
+                el.innerHTML = '<span class="original-price">' + proPrice + '</span> ' + cryptoPrice + ' with crypto';
+            } else {
+                el.textContent = 'Pay with crypto';
             }
         });
     }
@@ -2440,36 +2403,6 @@ const App = (function() {
                     }
                     updateAuthFocusIndicators();
                     playSound('tick');
-                } else if (e.key === 'ArrowLeft') {
-                    if (!accountView.classList.contains('hidden')) {
-                        e.preventDefault();
-                        if (window._authFocusArea === 'period') {
-                            var periodTabs = Array.from(document.querySelectorAll('.period-tab'));
-                            var currentIdx = periodTabs.findIndex(function(t) { return t.classList.contains('selected'); });
-                            var newIdx = (currentIdx - 1 + periodTabs.length) % periodTabs.length;
-                            periodTabs[newIdx].click();
-                        } else if (window._authFocusArea === 'category') {
-                            var categoryChips = Array.from(document.querySelectorAll('#analytics-category .analytics-chip'));
-                            var currentIdx = categoryChips.findIndex(function(c) { return c.classList.contains('selected'); });
-                            var newIdx = (currentIdx - 1 + categoryChips.length) % categoryChips.length;
-                            categoryChips[newIdx].click();
-                        }
-                    }
-                } else if (e.key === 'ArrowRight') {
-                    if (!accountView.classList.contains('hidden')) {
-                        e.preventDefault();
-                        if (window._authFocusArea === 'period') {
-                            var periodTabs = Array.from(document.querySelectorAll('.period-tab'));
-                            var currentIdx = periodTabs.findIndex(function(t) { return t.classList.contains('selected'); });
-                            var newIdx = (currentIdx + 1) % periodTabs.length;
-                            periodTabs[newIdx].click();
-                        } else if (window._authFocusArea === 'category') {
-                            var categoryChips = Array.from(document.querySelectorAll('#analytics-category .analytics-chip'));
-                            var currentIdx = categoryChips.findIndex(function(c) { return c.classList.contains('selected'); });
-                            var newIdx = (currentIdx + 1) % categoryChips.length;
-                            categoryChips[newIdx].click();
-                        }
-                    }
                 } else if (e.key === 'Enter' || e.key === ' ') {
                     if (window._authFocusArea === 'close') {
                         e.preventDefault();
@@ -2526,8 +2459,6 @@ const App = (function() {
             const signOutBtn = document.getElementById('sign-out');
             const migrateYes = document.getElementById('migrate-yes');
             const migrateNo = document.getElementById('migrate-no');
-            const analyticsPeriodTabs = document.querySelector('.analytics-period-tabs');
-            const analyticsCategoryFilter = document.getElementById('analytics-category');
 
             // Clear all
             closeAuth.classList.remove('focused');
@@ -2539,8 +2470,6 @@ const App = (function() {
             if (signOutBtn) signOutBtn.classList.remove('focused');
             if (migrateYes) migrateYes.classList.remove('focused');
             if (migrateNo) migrateNo.classList.remove('focused');
-            if (analyticsPeriodTabs) analyticsPeriodTabs.dataset.focused = 'false';
-            if (analyticsCategoryFilter) analyticsCategoryFilter.dataset.focused = 'false';
 
             if (window._authFocusArea === 'close') {
                 closeAuth.classList.add('focused');
@@ -2575,10 +2504,6 @@ const App = (function() {
                 } else if (!migrateView.classList.contains('hidden') && migrateNo) {
                     migrateNo.classList.add('focused');
                 }
-            } else if (window._authFocusArea === 'period') {
-                if (analyticsPeriodTabs) analyticsPeriodTabs.dataset.focused = 'true';
-            } else if (window._authFocusArea === 'category') {
-                if (analyticsCategoryFilter) analyticsCategoryFilter.dataset.focused = 'true';
             }
         }
 

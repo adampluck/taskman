@@ -118,6 +118,45 @@ const Payments = (function() {
     }
 
     /**
+     * Get the standard Pro price in cents
+     */
+    function getProPriceCents() {
+        if (!subscriptionStatus || !subscriptionStatus.pro_price_cents) {
+            return 500; // Default $5.00
+        }
+        return subscriptionStatus.pro_price_cents;
+    }
+
+    /**
+     * Get the crypto payment price in cents
+     */
+    function getCryptoPriceCents() {
+        if (!subscriptionStatus || !subscriptionStatus.crypto_price_cents) {
+            return 500; // Default $5.00
+        }
+        return subscriptionStatus.crypto_price_cents;
+    }
+
+    /**
+     * Check if crypto has a discount compared to standard price
+     */
+    function hasCryptoDiscount() {
+        return getCryptoPriceCents() < getProPriceCents();
+    }
+
+    /**
+     * Format cents as dollar string (e.g., 500 -> "$5")
+     */
+    function formatPrice(cents) {
+        var dollars = cents / 100;
+        // Remove decimal if whole number
+        if (dollars === Math.floor(dollars)) {
+            return '$' + dollars;
+        }
+        return '$' + dollars.toFixed(2);
+    }
+
+    /**
      * Initiate Stripe checkout
      */
     async function initiateCheckout() {
@@ -251,6 +290,10 @@ const Payments = (function() {
         getSyncedTaskCount: getSyncedTaskCount,
         getNudgeCompletedThresholds: getNudgeCompletedThresholds,
         getNudgeAddedThresholds: getNudgeAddedThresholds,
+        getProPriceCents: getProPriceCents,
+        getCryptoPriceCents: getCryptoPriceCents,
+        hasCryptoDiscount: hasCryptoDiscount,
+        formatPrice: formatPrice,
         initiateCheckout: initiateCheckout,
         initiateCryptoCheckout: initiateCryptoCheckout,
         onStatusChange: onStatusChange,

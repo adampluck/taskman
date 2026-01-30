@@ -51,6 +51,16 @@ serve(async (req) => {
       throw new Error("Already subscribed to Pro");
     }
 
+    // Get crypto price from feature flags
+    const { data: featureFlag } = await supabaseClient
+      .from("feature_flags")
+      .select("metadata")
+      .eq("key", "payments_enabled")
+      .single();
+
+    const cryptoPriceCents = featureFlag?.metadata?.crypto_price_cents ?? 500;
+    const cryptoPriceDollars = cryptoPriceCents / 100;
+
     // Get Sprintcheckout API key
     const apiKey = Deno.env.get("SPRINTCHECKOUT_API_KEY");
     if (!apiKey) {
@@ -66,7 +76,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         orderType: "STATIC",
-        amount: 5,
+        amount: cryptoPriceDollars,
         currency: "USD",
         orderId: user.id,
         successUrl: `${origin}?payment=success`,

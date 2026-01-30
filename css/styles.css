@@ -2330,7 +2330,7 @@ body.rainbow-mode .manage-item-btn.focused.delete {
 /* Auth Floating Button */
 .auth-float {
     top: 32px;
-    left: 24px;
+    left: 32px;
     bottom: auto;
 }
 
@@ -2658,109 +2658,26 @@ body.light-mode .btn-passkey:hover {
     color: #666;
 }
 
-/* Analytics Section */
-.analytics-section {
+/* Tasks Completed Stat */
+.tasks-completed-stat {
     margin: 20px 0;
     padding-top: 16px;
     border-top: 1px solid #333;
-}
-
-.analytics-period-tabs {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    margin-bottom: 16px;
-}
-
-.period-tab {
-    padding: 6px 14px;
-    font-size: 0.75rem;
-    background: transparent;
-    border: 1px solid #333;
-    border-radius: 16px;
-    color: #666;
-    cursor: pointer;
-    transition: border-color 0.15s, color 0.15s, background 0.15s;
-}
-
-.period-tab:hover {
-    border-color: #555;
-    color: #888;
-}
-
-.period-tab.selected {
-    border-color: #fff;
-    color: #fff;
-    background: #222;
-}
-
-.analytics-stat {
     text-align: center;
-    margin-bottom: 16px;
 }
 
-.analytics-value {
+.tasks-completed-value {
     display: block;
     font-size: 2.5rem;
     font-weight: 600;
     line-height: 1.2;
 }
 
-.analytics-label {
+.tasks-completed-label {
     font-size: 0.75rem;
     color: #666;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-}
-
-.analytics-category-filter {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-
-.analytics-chip {
-    padding: 6px 10px;
-    font-size: 0.6875rem;
-    background: transparent;
-    border: 1px solid #333;
-    border-radius: 14px;
-    color: #666;
-    cursor: pointer;
-    transition: border-color 0.15s, color 0.15s, background 0.15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.analytics-chip svg {
-    width: 14px;
-    height: 14px;
-}
-
-.analytics-chip:hover {
-    border-color: #555;
-    color: #888;
-}
-
-.analytics-chip.selected {
-    border-color: #fff;
-    color: #fff;
-    background: #222;
-}
-
-.analytics-period-tabs,
-.analytics-category-filter {
-    padding: 8px;
-    margin: -8px;
-    margin-bottom: 8px;
-    border-radius: 8px;
-}
-
-.analytics-period-tabs[data-focused="true"],
-.analytics-category-filter[data-focused="true"] {
-    background: rgba(255, 255, 255, 0.08);
 }
 
 .auth-actions {
@@ -2952,49 +2869,12 @@ body.light-mode .stat-label {
     color: #888;
 }
 
-body.light-mode .analytics-section {
+body.light-mode .tasks-completed-stat {
     border-top-color: #ddd;
 }
 
-body.light-mode .period-tab {
-    border-color: #ddd;
+body.light-mode .tasks-completed-label {
     color: #888;
-}
-
-body.light-mode .period-tab:hover {
-    border-color: #bbb;
-    color: #666;
-}
-
-body.light-mode .period-tab.selected {
-    border-color: #111;
-    color: #111;
-    background: #f5f5f5;
-}
-
-body.light-mode .analytics-label {
-    color: #888;
-}
-
-body.light-mode .analytics-chip {
-    border-color: #ddd;
-    color: #888;
-}
-
-body.light-mode .analytics-chip:hover {
-    border-color: #bbb;
-    color: #666;
-}
-
-body.light-mode .analytics-chip.selected {
-    border-color: #111;
-    color: #111;
-    background: #f5f5f5;
-}
-
-body.light-mode .analytics-period-tabs[data-focused="true"],
-body.light-mode .analytics-category-filter[data-focused="true"] {
-    background: rgba(0, 0, 0, 0.06);
 }
 
 /* Rainbow mode auth styles */
@@ -3030,53 +2910,16 @@ body.rainbow-mode .auth-divider::after {
     background: var(--rainbow-border);
 }
 
-body.rainbow-mode .analytics-section {
+body.rainbow-mode .tasks-completed-stat {
     border-top-color: var(--rainbow-border);
 }
 
-body.rainbow-mode .period-tab {
-    border-color: var(--rainbow-border);
+body.rainbow-mode .tasks-completed-value {
+    color: var(--rainbow-fg);
+}
+
+body.rainbow-mode .tasks-completed-label {
     color: var(--rainbow-muted);
-}
-
-body.rainbow-mode .period-tab:hover {
-    border-color: var(--rainbow-accent);
-    color: var(--rainbow-fg);
-}
-
-body.rainbow-mode .period-tab.selected {
-    border-color: var(--rainbow-fg);
-    color: var(--rainbow-fg);
-    background: var(--rainbow-surface);
-}
-
-body.rainbow-mode .analytics-value {
-    color: var(--rainbow-fg);
-}
-
-body.rainbow-mode .analytics-label {
-    color: var(--rainbow-muted);
-}
-
-body.rainbow-mode .analytics-chip {
-    border-color: var(--rainbow-border);
-    color: var(--rainbow-muted);
-}
-
-body.rainbow-mode .analytics-chip:hover {
-    border-color: var(--rainbow-accent);
-    color: var(--rainbow-fg);
-}
-
-body.rainbow-mode .analytics-chip.selected {
-    border-color: var(--rainbow-fg);
-    color: var(--rainbow-fg);
-    background: var(--rainbow-surface);
-}
-
-body.rainbow-mode .analytics-period-tabs[data-focused="true"],
-body.rainbow-mode .analytics-category-filter[data-focused="true"] {
-    background: hsla(var(--rainbow-hue), 40%, 50%, 0.1);
 }
 
 body.rainbow-mode .sync-status {
@@ -3166,7 +3009,7 @@ body.rainbow-mode .paywall-features li {
 }
 
 .tier-row {
-    display: flex;
+    display: block;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
@@ -3251,7 +3094,6 @@ body.rainbow-mode .tasks-remaining {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    margin-top: 16px;
     padding: 10px 16px;
     font-size: 0.9375rem;
     color: #aaa;
@@ -3291,6 +3133,17 @@ body.rainbow-mode .crypto-link {
 body.rainbow-mode .crypto-link:hover {
     color: var(--rainbow-fg);
     border-color: var(--rainbow-accent);
+}
+
+/* Crypto discount price display */
+.original-price {
+    text-decoration: line-through;
+    opacity: 0.6;
+    margin-right: 2px;
+}
+
+.crypto-price-text {
+    display: inline;
 }
 
 /* Voice Input Styles */
